@@ -293,7 +293,7 @@ namespace proiect_poo
         {
             if (decizie.Effects == null || decizie.Effects.Count == 0)
             {
-                if (!string.IsNullOrEmpty(decizie.UnlocksIdeaId))
+                if (!string.IsNullOrEmpty(decizie.UnlocksIdeaId) && !_gameState.IdeaResearchLevels.ContainsKey(decizie.UnlocksIdeaId))
                     return "! - deblochează o idee nouă";
                 return "Fără efecte directe.";
             }
@@ -306,7 +306,7 @@ namespace proiect_poo
                 string semn = efect.Value >= 0 ? "+" : "";
                 result += $"\n{nume}: {semn}{efect.Value}";
             }
-            if (!string.IsNullOrEmpty(decizie.UnlocksIdeaId))
+            if (!string.IsNullOrEmpty(decizie.UnlocksIdeaId) && !_gameState.IdeaResearchLevels.ContainsKey(decizie.UnlocksIdeaId))
                 result += "\n! - deblochează o idee nouă";
 
             return result;
