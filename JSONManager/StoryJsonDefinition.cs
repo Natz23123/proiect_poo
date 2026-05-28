@@ -9,5 +9,6 @@ namespace proiect_poo
         [JsonPropertyName("startBlock")] public string StartBlock { get; set; }
         [JsonPropertyName("properties")] public List<PropertyJsonDefinition> Properties { get; set; } = new List<PropertyJsonDefinition>();
         [JsonPropertyName("days")] public List<DayJsonDefinition> Days { get; set; } = new List<DayJsonDefinition>();
+        [JsonPropertyName("ideas")] public List<IdeaJsonDefinition> Ideas { get; set; } = new List<IdeaJsonDefinition>();
     }
 }
