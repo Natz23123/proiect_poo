@@ -37,3 +37,35 @@ This project is a Windows Forms-based narrative game engine that dynamically loa
 ### How the Story Works
 
 1. **Initialization**
+
+## Technical Stack
+
+- **Language**: C# 7.3
+- **Framework**: .NET Framework 4.7.2
+- **UI**: Windows Forms
+- **Serialization**: System.Text.Json
+- **Version Control**: Git
+
+## How to Use
+
+1. **Create a Story JSON File**
+   - Define properties, ideas, blocks, and decisions
+   - Place in `bin/Debug` folder as `default_story.json`
+
+2. **Run the Application**
+   - Form1 automatically loads and initializes the story
+   - Make decisions to progress through narrative branches
+
+3. **Track Progress**
+   - Properties update in real-time
+   - Research ideas accumulate through gameplay
+   - Block transitions based on decision targets
+
+## Future Enhancements
+
+- Save/Load game state functionality
+- Multiple story file support
+- Advanced condition operators
+- Achievement/milestone system
+- Dynamic day/time progression
+- Inventory system integration
