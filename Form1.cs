@@ -10,6 +10,7 @@ namespace proiect_poo
     {
         private TextAnimation _textAnimation;
         private GameState _gameState;
+        private ToolTip _tooltip = new ToolTip();
 
         public Form1()
         {
@@ -108,9 +109,11 @@ namespace proiect_poo
         {
             panelButoane.Controls.Clear();
 
+            _tooltip.InitialDelay = 300;
+            _tooltip.AutoPopDelay = 5000;
+
             foreach (var decizie in blocCurent.Decisions)
             {
-                // Sărim deciziile cu condiții care nu sunt îndeplinite
                 if (decizie.Condition != null && !decizie.Condition.Evaluate(_gameState.ToateStatusurile))
                     continue;
 
@@ -119,7 +122,24 @@ namespace proiect_poo
                 btn.Size = new Size(320, 45);
                 btn.Font = new Font("Segoe UI", 9, FontStyle.Regular);
 
-                // Capturăm decizia și DecisionsRequired ale blocului curent pentru closure
+                string infoHover = "Efecte previzibile:";
+                if (decizie.Effects != null && decizie.Effects.Count > 0)
+                {
+                    foreach (var efect in decizie.Effects)
+                    {
+                        var status = _gameState.ToateStatusurile.FirstOrDefault(s => s.Key == efect.Property);
+                        string numeStatus = status != null ? status.Nume : efect.Property;
+
+                        string semn = efect.Value >= 0 ? "+" : "";
+                        infoHover += $"\n{numeStatus}: {semn}{efect.Value}";
+                    }
+                }
+                else
+                {
+                    infoHover = "Această decizie nu are efecte directe.";
+                }
+
+                _tooltip.SetToolTip(btn, infoHover);
                 var decizieCapturata = decizie;
                 int decisionsRequired = blocCurent.DecisionsRequired;
 
