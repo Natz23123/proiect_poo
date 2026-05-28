@@ -1,0 +1,21 @@
+﻿using System;
+using System.IO;
+using System.Text;
+using System.Text.Json;
+
+namespace proiect_poo
+{
+    public class JsonManager
+    {
+        public static StoryJsonDefinition IncarcaPoveste(string caleFisier)
+        {
+            if (!File.Exists(caleFisier))
+            {
+                throw new FileNotFoundException($"Fișierul '{caleFisier}' nu a fost găsit.");
+            }
+
+            string jsonString = File.ReadAllText(caleFisier, Encoding.UTF8);
+            return JsonSerializer.Deserialize<StoryJsonDefinition>(jsonString);
+        }
+    }
+}
