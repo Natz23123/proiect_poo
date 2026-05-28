@@ -64,6 +64,7 @@
             this.Controls.Add(this.panelHUD);
             this.Controls.Add(this.panelButoane);
             this.Controls.Add(this.lblTextHolder);
+            this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Form1";
             this.Text = "Form1";
