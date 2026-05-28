@@ -9,5 +9,6 @@ namespace proiect_poo
         [JsonPropertyName("targetBlock")] public string TargetBlock { get; set; }
         [JsonPropertyName("effects")] public List<EffectJsonDefinition> Effects { get; set; } = new List<EffectJsonDefinition>();
         [JsonPropertyName("condition")] public ConditionNode Condition { get; set; }
+        [JsonPropertyName("unlocksIdeaId")] public string UnlocksIdeaId { get; set; }
     }
 }

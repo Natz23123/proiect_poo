@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -15,10 +16,8 @@ namespace proiect_poo
         public Form1()
         {
             InitializeComponent();
-
             _textAnimation = new TextAnimation(lblTextHolder, 25);
             _gameState = new GameState();
-
             IncarcaPovesteDinJson("default_story.json");
         }
 
@@ -32,7 +31,6 @@ namespace proiect_poo
                                     $"Asigură-te că l-ai copiat în folderul 'bin/Debug' al proiectului tău.");
                     return;
                 }
-
                 StoryJsonDefinition poveste = JsonManager.IncarcaPoveste(caleFisier);
                 _gameState.InitializareJoc(poveste);
                 ActualizeazaInterfata();
@@ -46,10 +44,9 @@ namespace proiect_poo
         private void ActualizeazaInterfata()
         {
             var blocCurent = _gameState.GasesteBlocDupaId(_gameState.CurrentBlockId);
-
             if (blocCurent == null)
             {
-                MessageBox.Show($"Eroare: Blocul cu ID-ul '{_gameState.CurrentBlockId}' nu a fost găsit în JSON.");
+                MessageBox.Show($"Eroare: Blocul '{_gameState.CurrentBlockId}' nu există în JSON.");
                 return;
             }
 
@@ -63,6 +60,9 @@ namespace proiect_poo
             createButtons(blocCurent);
         }
 
+        // =====================================================================
+        // HUD
+        // =====================================================================
         private void createStatusHud()
         {
             panelHUD.Controls.Clear();
@@ -72,18 +72,17 @@ namespace proiect_poo
                 .OrderBy(s => s.HudOrder);
 
             int index = 0;
-
             foreach (var status in statusuriDeAfisat)
             {
-                FlowLayoutPanel cutieStatus = new FlowLayoutPanel();
-                cutieStatus.FlowDirection = FlowDirection.TopDown;
-                cutieStatus.WrapContents = false;
-                cutieStatus.AutoSize = true;
-                cutieStatus.Margin = new Padding(0, 0, 0, 4);
+                FlowLayoutPanel cutie = new FlowLayoutPanel();
+                cutie.FlowDirection = FlowDirection.TopDown;
+                cutie.WrapContents = false;
+                cutie.AutoSize = true;
+                cutie.Margin = new Padding(0, 0, 0, 4);
 
-                Label lblStatus = new Label();
-                lblStatus.Text = $"{status.Nume}: {status.Valoare}%";
-                lblStatus.AutoSize = true;
+                Label lbl = new Label();
+                lbl.Text = $"{status.Nume}: {status.Valoare}";
+                lbl.AutoSize = true;
 
                 ProgressBar pb = new ProgressBar();
                 pb.Minimum = status.Min;
@@ -91,66 +90,226 @@ namespace proiect_poo
                 pb.Value = status.Valoare;
 
                 bool isPrimary = index == 0;
-                lblStatus.Font = new Font("Segoe UI", isPrimary ? 12 : 10, FontStyle.Bold);
-                lblStatus.Margin = new Padding(5, 0, 5, 0);
-
+                lbl.Font = new Font("Segoe UI", isPrimary ? 12 : 10, FontStyle.Bold);
+                lbl.Margin = new Padding(5, 0, 5, 0);
                 pb.Size = new Size(isPrimary ? 110 : 60, isPrimary ? 14 : 8);
                 pb.Margin = new Padding(5, 1, 5, 0);
 
-                cutieStatus.Controls.Add(lblStatus);
-                cutieStatus.Controls.Add(pb);
-                panelHUD.Controls.Add(cutieStatus);
-
+                cutie.Controls.Add(lbl);
+                cutie.Controls.Add(pb);
+                panelHUD.Controls.Add(cutie);
                 index++;
             }
         }
 
+        // =====================================================================
+        // BUTOANE
+        // =====================================================================
         private void createButtons(BlockJsonDefinition blocCurent)
         {
             panelButoane.Controls.Clear();
-
             _tooltip.InitialDelay = 300;
             _tooltip.AutoPopDelay = 5000;
 
+            string blockType = blocCurent.BlockType ?? "normal";
+
+            // --- Decizii normale (prezente indiferent de tipul blocului) ---
             foreach (var decizie in blocCurent.Decisions)
             {
                 if (decizie.Condition != null && !decizie.Condition.Evaluate(_gameState.ToateStatusurile))
                     continue;
 
-                Button btn = new Button();
-                btn.Text = decizie.Text;
-                btn.Size = new Size(320, 45);
-                btn.Font = new Font("Segoe UI", 9, FontStyle.Regular);
-
-                string infoHover = "Efecte previzibile:";
-                if (decizie.Effects != null && decizie.Effects.Count > 0)
-                {
-                    foreach (var efect in decizie.Effects)
-                    {
-                        var status = _gameState.ToateStatusurile.FirstOrDefault(s => s.Key == efect.Property);
-                        string numeStatus = status != null ? status.Nume : efect.Property;
-
-                        string semn = efect.Value >= 0 ? "+" : "";
-                        infoHover += $"\n{numeStatus}: {semn}{efect.Value}";
-                    }
-                }
-                else
-                {
-                    infoHover = "Această decizie nu are efecte directe.";
-                }
-
-                _tooltip.SetToolTip(btn, infoHover);
+                var btn = BuildButton(decizie.Text, BuildNormalTooltip(decizie));
                 var decizieCapturata = decizie;
                 int decisionsRequired = blocCurent.DecisionsRequired;
 
-                btn.Click += (sender, e) =>
+                btn.Click += (s, e) =>
                 {
                     _gameState.AplicaEfecteDecizie(decizieCapturata, decisionsRequired);
                     ActualizeazaInterfata();
                 };
-
                 panelButoane.Controls.Add(btn);
             }
+
+            // --- Buton agregat RESEARCH ---
+            // Apare în blockType "research", dar NUMAI dacă există cel puțin o idee researchabilă
+            if (blockType == "research")
+            {
+                bool areIdeiDeResearch = _gameState.IdeaResearchLevels.Keys
+                    .Any(id => _gameState.GetNextResearchLevel(id) != null);
+
+                if (areIdeiDeResearch)
+                {
+                    int decisionsReqR = blocCurent.DecisionsRequired;
+                    string nextBlockR = blocCurent.NextBlock;
+
+                    var btnResearch = BuildButton(
+                        "Dă research la o idee →",
+                        "Deschide lista de idei disponibile pentru research.");
+
+                    btnResearch.Click += (s, e) =>
+                    {
+                        var optiuni = BuildResearchOptions(decisionsReqR, nextBlockR);
+                        ShowIdeaPickerDialog("Research — alege o idee", optiuni);
+                    };
+                    panelButoane.Controls.Add(btnResearch);
+                }
+
+                // --- Buton agregat IMPLEMENT (vizibil și din blocul de research) ---
+                // Apare dacă există cel puțin o idee cu research level >= 1
+                bool areIdeiDeImplementat = _gameState.IdeaResearchLevels.Any(kv => kv.Value >= 1);
+                if (areIdeiDeImplementat)
+                {
+                    int decisionsReqI = blocCurent.DecisionsRequired;
+                    string nextBlockI = blocCurent.NextBlock;
+
+                    var btnImpl = BuildButton(
+                        "Implementează o idee →",
+                        "Deschide lista de idei gata de implementat.");
+
+                    btnImpl.Click += (s, e) =>
+                    {
+                        var optiuni = BuildImplementOptions(decisionsReqI, nextBlockI);
+                        ShowIdeaPickerDialog("Implementare — alege o idee", optiuni);
+                    };
+                    panelButoane.Controls.Add(btnImpl);
+                }
+            }
+        }
+
+        // =====================================================================
+        // POPUP PICKER
+        // =====================================================================
+
+        // Deschide o fereastră modală cu butoane pentru fiecare opțiune
+        // Fiecare opțiune are: textul butonului, textul tooltip-ului și acțiunea la click
+        private void ShowIdeaPickerDialog(string titlu, List<(string label, string tooltip, Action actiune)> optiuni)
+        {
+            Form popup = new Form();
+            popup.Text = titlu;
+            popup.Size = new Size(440, 80 + optiuni.Count * 55);
+            popup.StartPosition = FormStartPosition.CenterParent;
+            popup.FormBorderStyle = FormBorderStyle.FixedDialog;
+            popup.MaximizeBox = false;
+            popup.MinimizeBox = false;
+
+            FlowLayoutPanel panel = new FlowLayoutPanel();
+            panel.Dock = DockStyle.Fill;
+            panel.FlowDirection = FlowDirection.TopDown;
+            panel.Padding = new Padding(10);
+            panel.AutoScroll = true;
+
+            foreach (var (label, tooltipText, actiune) in optiuni)
+            {
+                Button btn = new Button();
+                btn.Text = label;
+                btn.Size = new Size(400, 45);
+                btn.Font = new Font("Segoe UI", 9, FontStyle.Regular);
+                _tooltip.SetToolTip(btn, tooltipText);
+
+                btn.Click += (s, e) =>
+                {
+                    popup.Close();
+                    actiune();         // actiunea apelează deja ActualizeazaInterfata()
+                };
+                panel.Controls.Add(btn);
+            }
+
+            popup.Controls.Add(panel);
+            popup.ShowDialog(this);
+        }
+
+        // Construiește lista de opțiuni pentru research (câte una per idee researchabilă)
+        private List<(string, string, Action)> BuildResearchOptions(int decisionsRequired, string nextBlock)
+        {
+            var lista = new List<(string, string, Action)>();
+
+            foreach (var kv in _gameState.IdeaResearchLevels)
+            {
+                string ideaId = kv.Key;
+                var nextLvl = _gameState.GetNextResearchLevel(ideaId);
+                if (nextLvl == null) continue;
+
+                var idea = _gameState.PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == ideaId);
+                if (idea == null) continue;
+
+                string capturedId = ideaId;
+                lista.Add((
+                    $"{idea.Name}  —  Nivel {nextLvl.Level}: {nextLvl.Description}",
+                    $"Inovație: +{nextLvl.InnovationAdded}   Stres: +{nextLvl.StressCost}",
+                    () =>
+                    {
+                        _gameState.ResearchIdea(capturedId, decisionsRequired, nextBlock);
+                        ActualizeazaInterfata();
+                    }
+                ));
+            }
+
+            return lista;
+        }
+
+        // Construiește lista de opțiuni pentru implement (câte una per idee cu nivel >= 1)
+        private List<(string, string, Action)> BuildImplementOptions(int decisionsRequired, string nextBlock)
+        {
+            var lista = new List<(string, string, Action)>();
+
+            foreach (var kv in _gameState.IdeaResearchLevels.Where(x => x.Value >= 1))
+            {
+                string ideaId = kv.Key;
+                int level = kv.Value;
+                var idea = _gameState.PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == ideaId);
+                var levelDef = idea?.ResearchLevels.FirstOrDefault(l => l.Level == level);
+                if (idea == null || levelDef == null) continue;
+
+                string capturedId = ideaId;
+                lista.Add((
+                    $"{idea.Name}  —  Research Nivel {level}",
+                    $"Progress: +{levelDef.ProgressAdded}   Stres: +{levelDef.StressCost}",
+                    () =>
+                    {
+                        _gameState.ImplementIdea(capturedId, decisionsRequired, nextBlock);
+                        ActualizeazaInterfata();
+                    }
+                ));
+            }
+
+            return lista;
+        }
+
+        // =====================================================================
+        // HELPERS UI
+        // =====================================================================
+        private Button BuildButton(string text, string tooltipText)
+        {
+            Button btn = new Button();
+            btn.Text = text;
+            btn.Size = new Size(320, 45);
+            btn.Font = new Font("Segoe UI", 9, FontStyle.Regular);
+            _tooltip.SetToolTip(btn, tooltipText);
+            return btn;
+        }
+
+        private string BuildNormalTooltip(DecisionJsonDefinition decizie)
+        {
+            if (decizie.Effects == null || decizie.Effects.Count == 0)
+            {
+                if (!string.IsNullOrEmpty(decizie.UnlocksIdeaId))
+                    return "! - deblochează o idee nouă";
+                return "Fără efecte directe.";
+            }
+
+            string result = "Efecte:";
+            foreach (var efect in decizie.Effects)
+            {
+                var status = _gameState.ToateStatusurile.FirstOrDefault(s => s.Key == efect.Property);
+                string nume = status != null ? status.Nume : efect.Property;
+                string semn = efect.Value >= 0 ? "+" : "";
+                result += $"\n{nume}: {semn}{efect.Value}";
+            }
+            if (!string.IsNullOrEmpty(decizie.UnlocksIdeaId))
+                result += "\n! - deblochează o idee nouă";
+
+            return result;
         }
 
         private void lblTextHolder_Click(object sender, EventArgs e)
