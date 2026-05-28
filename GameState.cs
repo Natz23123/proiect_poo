@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace proiect_poo
@@ -15,6 +16,9 @@ namespace proiect_poo
         // ideaId → nivelul MAXIM permis de research (se mărește prin decizii speciale)
         public Dictionary<string, int> IdeaMaxAllowedLevels { get; private set; } = new Dictionary<string, int>();
 
+        // NOU: ideaId → nivelul curent IMPLEMENTAT (previne implementarea repetată a aceluiași nivel)
+        public Dictionary<string, int> IdeaImplementationLevels { get; private set; } = new Dictionary<string, int>();
+
         private int _deciziiLuateInBlocCurent = 0;
 
         // =====================================================================
@@ -26,6 +30,7 @@ namespace proiect_poo
             ToateStatusurile.Clear();
             IdeaResearchLevels.Clear();
             IdeaMaxAllowedLevels.Clear();
+            IdeaImplementationLevels.Clear(); // MODIFICARE: Resetăm și lista de implementări la început de joc
             _deciziiLuateInBlocCurent = 0;
 
             if (poveste.Properties != null)
@@ -72,11 +77,18 @@ namespace proiect_poo
             int currentLevel = IdeaResearchLevels.ContainsKey(ideaId) ? IdeaResearchLevels[ideaId] : 0;
             if (currentLevel == 0) return;
 
+            // MODIFICARE/VERIFICARE: Dacă am implementat deja acest nivel (sau unul mai mare), nu facem nimic
+            if (IdeaImplementationLevels.TryGetValue(ideaId, out int implLevel) && implLevel >= currentLevel)
+                return;
+
             var levelDef = idea.ResearchLevels.FirstOrDefault(l => l.Level == currentLevel);
             if (levelDef == null) return;
 
             ModificaStatus("progress", levelDef.ProgressAdded);
             ModificaStatus("stres", levelDef.StressCost);
+
+            // MODIFICARE: Salvăm faptul că am implementat acest nivel, ca să nu îl mai repetăm
+            IdeaImplementationLevels[ideaId] = currentLevel;
 
             PostActionAdvance(decisionsRequired, nextBlock);
         }
@@ -113,6 +125,11 @@ namespace proiect_poo
                         {
                             if (IdeaMaxAllowedLevels[efect.Property] < efect.Value)
                                 IdeaMaxAllowedLevels[efect.Property] = efect.Value;
+                        }
+                        else
+                        {
+                            // FIX: Dacă ideea nu e în dicționar, o salvăm direct cu noul nivel permis
+                            IdeaMaxAllowedLevels[efect.Property] = efect.Value;
                         }
                         continue;
                     }

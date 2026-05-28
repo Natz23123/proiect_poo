@@ -108,6 +108,7 @@ namespace proiect_poo
         private void createButtons(BlockJsonDefinition blocCurent)
         {
             panelButoane.Controls.Clear();
+            _tooltip.RemoveAll();
             _tooltip.InitialDelay = 300;
             _tooltip.AutoPopDelay = 5000;
 
@@ -257,6 +258,14 @@ namespace proiect_poo
             {
                 string ideaId = kv.Key;
                 int level = kv.Value;
+
+                // ACEASTA ESTE LINIA CRUCIALĂ ÎN FORM1:
+                // Dacă nivelul de implementare salvat în GameState e mai mare sau egal cu cel cercetat, îl sărim!
+                if (_gameState.IdeaImplementationLevels.TryGetValue(ideaId, out int implLevel) && implLevel >= level)
+                {
+                    continue;
+                }
+
                 var idea = _gameState.PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == ideaId);
                 var levelDef = idea?.ResearchLevels.FirstOrDefault(l => l.Level == level);
                 if (idea == null || levelDef == null) continue;
@@ -300,6 +309,18 @@ namespace proiect_poo
                 {
                     if (efect.Type?.ToUpper() == "UNLOCK_LEVEL")
                     {
+                        // 1. Verificăm ce nivel este deblocat în acest moment în joc pentru această idee
+                        int maxAllowedAcum = 0;
+                        if (_gameState.IdeaMaxAllowedLevels.ContainsKey(efect.Property))
+                        {
+                            maxAllowedAcum = _gameState.IdeaMaxAllowedLevels[efect.Property];
+                        }
+
+                        // 2. Dacă nivelul oferit de buton (ex: Nivel 2) este deja deblocat (ex: avem deja 2 sau mai mult)
+                        // ascundem complet acest rând din tooltip folosind 'continue'
+                        if (efect.Value <= maxAllowedAcum)
+                            continue;
+
                         // Găsim numele ideii pentru un display mai frumos
                         var ideeGasita = _gameState.PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == efect.Property);
                         string numeIdee = ideeGasita != null ? ideeGasita.Name : efect.Property;
