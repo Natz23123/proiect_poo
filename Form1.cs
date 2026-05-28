@@ -291,23 +291,44 @@ namespace proiect_poo
 
         private string BuildNormalTooltip(DecisionJsonDefinition decizie)
         {
-            if (decizie.Effects == null || decizie.Effects.Count == 0)
+            string result = "Efecte:";
+            bool areEfecteAfisabile = false;
+
+            if (decizie.Effects != null && decizie.Effects.Count > 0)
             {
-                if (!string.IsNullOrEmpty(decizie.UnlocksIdeaId) && !_gameState.IdeaResearchLevels.ContainsKey(decizie.UnlocksIdeaId))
-                    return "! - deblochează o idee nouă";
-                return "Fără efecte directe.";
+                foreach (var efect in decizie.Effects)
+                {
+                    if (efect.Type?.ToUpper() == "UNLOCK_LEVEL")
+                    {
+                        // Găsim numele ideii pentru un display mai frumos
+                        var ideeGasita = _gameState.PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == efect.Property);
+                        string numeIdee = ideeGasita != null ? ideeGasita.Name : efect.Property;
+
+                        result += $"\n💡 Permite Research Nivel {efect.Value} pentru: {numeIdee}";
+                        areEfecteAfisabile = true;
+                        continue;
+                    }
+
+                    var status = _gameState.ToateStatusurile.FirstOrDefault(s => s.Key == efect.Property);
+                    if (status != null) // E un status normal
+                    {
+                        string semn = efect.Value >= 0 ? "+" : "";
+                        result += $"\n{status.Nume}: {semn}{efect.Value}";
+                        areEfecteAfisabile = true;
+                    }
+                }
             }
 
-            string result = "Efecte:";
-            foreach (var efect in decizie.Effects)
-            {
-                var status = _gameState.ToateStatusurile.FirstOrDefault(s => s.Key == efect.Property);
-                string nume = status != null ? status.Nume : efect.Property;
-                string semn = efect.Value >= 0 ? "+" : "";
-                result += $"\n{nume}: {semn}{efect.Value}";
-            }
             if (!string.IsNullOrEmpty(decizie.UnlocksIdeaId) && !_gameState.IdeaResearchLevels.ContainsKey(decizie.UnlocksIdeaId))
-                result += "\n! - deblochează o idee nouă";
+            {
+                result += "\n! - Descoperă o idee nouă de proiect";
+                areEfecteAfisabile = true;
+            }
+
+            if (!areEfecteAfisabile)
+            {
+                return "Fără efecte directe.";
+            }
 
             return result;
         }

@@ -9,8 +9,11 @@ namespace proiect_poo
         public List<Status> ToateStatusurile { get; private set; } = new List<Status>();
         public StoryJsonDefinition PovesteIncarcata { get; private set; }
 
-        // ideaId → nivel curent de research (0 = deblocată dar neresearch-uită)
+        // ideaId → nivel curent de research FINALIZAT (0 = deblocată dar neresearch-uită)
         public Dictionary<string, int> IdeaResearchLevels { get; private set; } = new Dictionary<string, int>();
+
+        // ideaId → nivelul MAXIM permis de research (se mărește prin decizii speciale)
+        public Dictionary<string, int> IdeaMaxAllowedLevels { get; private set; } = new Dictionary<string, int>();
 
         private int _deciziiLuateInBlocCurent = 0;
 
@@ -22,6 +25,7 @@ namespace proiect_poo
             PovesteIncarcata = poveste;
             ToateStatusurile.Clear();
             IdeaResearchLevels.Clear();
+            IdeaMaxAllowedLevels.Clear();
             _deciziiLuateInBlocCurent = 0;
 
             if (poveste.Properties != null)
@@ -36,19 +40,21 @@ namespace proiect_poo
         // =====================================================================
         public void UnlockIdea(string ideaId)
         {
-            if (!string.IsNullOrEmpty(ideaId) && !IdeaResearchLevels.ContainsKey(ideaId))
-                IdeaResearchLevels[ideaId] = 0;
+            if (!string.IsNullOrEmpty(ideaId))
+            {
+                if (!IdeaResearchLevels.ContainsKey(ideaId))
+                    IdeaResearchLevels[ideaId] = 0;
+
+                // Când deblochezi o idee nouă, ai voie să îi dai research doar până la nivelul 1
+                if (!IdeaMaxAllowedLevels.ContainsKey(ideaId))
+                    IdeaMaxAllowedLevels[ideaId] = 1;
+            }
         }
 
-        // Research: avansează nivelul ideii, aplică innovationAdded + stressCost din nivelul următor
         public void ResearchIdea(string ideaId, int decisionsRequired, string nextBlock)
         {
-            var idea = PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == ideaId);
-            if (idea == null) return;
-
-            int currentLevel = IdeaResearchLevels.ContainsKey(ideaId) ? IdeaResearchLevels[ideaId] : 0;
-            var nextLevelDef = idea.ResearchLevels.FirstOrDefault(l => l.Level == currentLevel + 1);
-            if (nextLevelDef == null) return; // deja la nivel maxim
+            var nextLevelDef = GetNextResearchLevel(ideaId);
+            if (nextLevelDef == null) return;
 
             IdeaResearchLevels[ideaId] = nextLevelDef.Level;
 
@@ -58,14 +64,13 @@ namespace proiect_poo
             PostActionAdvance(decisionsRequired, nextBlock);
         }
 
-        // Implement: aplică progressAdded de la nivelul curent al ideii
         public void ImplementIdea(string ideaId, int decisionsRequired, string nextBlock)
         {
             var idea = PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == ideaId);
             if (idea == null) return;
 
             int currentLevel = IdeaResearchLevels.ContainsKey(ideaId) ? IdeaResearchLevels[ideaId] : 0;
-            if (currentLevel == 0) return; // nicio research făcută
+            if (currentLevel == 0) return;
 
             var levelDef = idea.ResearchLevels.FirstOrDefault(l => l.Level == currentLevel);
             if (levelDef == null) return;
@@ -76,13 +81,18 @@ namespace proiect_poo
             PostActionAdvance(decisionsRequired, nextBlock);
         }
 
-        // Helper: poate fi apelat din Form1 ca să știe dacă un buton de research mai are sens
+        // Returnează următorul nivel DOAR DACĂ nu s-a atins încă limita permisă
         public ResearchLevelJsonDefinition GetNextResearchLevel(string ideaId)
         {
             var idea = PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == ideaId);
             if (idea == null) return null;
 
             int currentLevel = IdeaResearchLevels.ContainsKey(ideaId) ? IdeaResearchLevels[ideaId] : 0;
+            int maxAllowed = IdeaMaxAllowedLevels.ContainsKey(ideaId) ? IdeaMaxAllowedLevels[ideaId] : 0;
+
+            // Verificarea de barieră: Nu putem trece de nivelul permis!
+            if (currentLevel >= maxAllowed) return null;
+
             return idea.ResearchLevels.FirstOrDefault(l => l.Level == currentLevel + 1);
         }
 
@@ -91,11 +101,23 @@ namespace proiect_poo
         // =====================================================================
         public void AplicaEfecteDecizie(DecisionJsonDefinition decizie, int decisionsRequired)
         {
-            // 1. Aplică efectele din lista de effects
             if (decizie.Effects != null)
             {
                 foreach (var efect in decizie.Effects)
                 {
+                    // Tratăm cazul special de deblocare a unui nivel nou de research
+                    if (efect.Type?.ToUpper() == "UNLOCK_LEVEL")
+                    {
+                        // efect.Property = ID-ul ideii, efect.Value = Nivelul pe care îl deblocăm
+                        if (IdeaMaxAllowedLevels.ContainsKey(efect.Property))
+                        {
+                            if (IdeaMaxAllowedLevels[efect.Property] < efect.Value)
+                                IdeaMaxAllowedLevels[efect.Property] = efect.Value;
+                        }
+                        continue;
+                    }
+
+                    // Logica normală de statusuri
                     var status = ToateStatusurile.FirstOrDefault(s => s.Key == efect.Property);
                     if (status == null) continue;
 
@@ -107,14 +129,12 @@ namespace proiect_poo
                 }
             }
 
-            // 2. Deblochează idee dacă e setat
             UnlockIdea(decizie.UnlocksIdeaId);
-
             PostActionAdvance(decisionsRequired, decizie.TargetBlock);
         }
 
         // =====================================================================
-        // QUERY HELPERS
+        // QUERY & HELPERS 
         // =====================================================================
         public BlockJsonDefinition GasesteBlocDupaId(string idBloc)
         {
@@ -130,21 +150,13 @@ namespace proiect_poo
         public DayJsonDefinition ZiuaCurenta()
         {
             if (PovesteIncarcata?.Days == null) return null;
-            return PovesteIncarcata.Days
-                .FirstOrDefault(zi => zi.Blocks.Any(b => b.Id == CurrentBlockId));
+            return PovesteIncarcata.Days.FirstOrDefault(zi => zi.Blocks.Any(b => b.Id == CurrentBlockId));
         }
 
-        // =====================================================================
-        // PRIVATE HELPERS
-        // =====================================================================
-
-        // Logică comună după orice acțiune: incrementează contorul, verifică redirect-uri,
-        // avansează la blocul următor dacă s-au făcut suficiente decizii
         private void PostActionAdvance(int decisionsRequired, string targetBlock)
         {
             _deciziiLuateInBlocCurent++;
 
-            // Redirect forțat dacă un status a atins extrema
             foreach (var status in ToateStatusurile)
             {
                 string redirect = status.VerificaRedirectionare();
@@ -156,13 +168,11 @@ namespace proiect_poo
                 }
             }
 
-            // Avansăm dacă am îndeplinit numărul de decizii cerute
             if (decisionsRequired == 0 || _deciziiLuateInBlocCurent >= decisionsRequired)
             {
                 _deciziiLuateInBlocCurent = 0;
                 CurrentBlockId = targetBlock;
             }
-            // Altfel rămânem în bloc — interfața se va reîmprospăta cu statusurile actualizate
         }
 
         private void ModificaStatus(string key, int delta)
