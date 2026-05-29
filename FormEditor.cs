@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 
@@ -7,96 +9,110 @@ namespace proiect_poo
 {
     public partial class FormEditor : Form
     {
-        // Obiectele de date engine
+        // ── State ─────────────────────────────────────────────────────────────
         private StoryJsonDefinition _povesteCurenta;
         private string _caleFichierCurent = "";
-
-        // Obiectele selectate curent pentru editare
         private BlockJsonDefinition _blocCurent;
         private DecisionJsonDefinition _decizieCurenta;
+        private IdeaJsonDefinition _ideeCurenta;
+        private ResearchLevelJsonDefinition _nivelCurent;
+        private ConditionNode _condChildCurent;   // child AND/OR selectat curent
         private bool _seIncarcaDatele = false;
 
-        // --- CONTROALE UI DECLARATE CONFORM STANDARDULUI DESIGNER ---
-        private System.Windows.Forms.TextBox txtTitluPoveste;
-        private System.Windows.Forms.Label lblTitluPoveste;
-        private System.Windows.Forms.TreeView treeViewStructura;
-        private System.Windows.Forms.Button btnCreazaNoua;
-        private System.Windows.Forms.Button btnIncarcaExistenta;
-        private System.Windows.Forms.Button btnSalveaza;
-        private System.Windows.Forms.Button btnAdaugaZi;
-        private System.Windows.Forms.Button btnAdaugaBloc;
+        // ── Controale toolbar ─────────────────────────────────────────────────
+        private TextBox txtTitluPoveste;
+        private Label lblTitluPoveste;
+        private Button btnCreazaNoua, btnIncarcaExistenta, btnSalveaza;
 
-        private System.Windows.Forms.ListBox lstStatusuri;
-        private System.Windows.Forms.TextBox txtStatusNume;
-        private System.Windows.Forms.Button btnAdaugaStatus;
-        private System.Windows.Forms.Button btnStergeStatus;
+        // ── Stânga – Statusuri ────────────────────────────────────────────────
+        private Label lblStatusuriTitlu;
+        private ListBox lstStatusuri;
+        private TextBox txtStatusNume;
+        private Button btnAdaugaStatus, btnStergeStatus, btnStatusSus, btnStatusJos;
 
-        // Butoane noi pentru ordonare Statusuri și Blocuri
-        private System.Windows.Forms.Button btnStatusSus;
-        private System.Windows.Forms.Button btnStatusJos;
-        private System.Windows.Forms.Button btnBlocSus;
-        private System.Windows.Forms.Button btnBlocJos;
+        // ── Stânga – TreeView ─────────────────────────────────────────────────
+        private Label lblStructuraTitlu;
+        private TreeView treeViewStructura;
+        private Button btnAdaugaZi, btnStergeZi;
+        private Button btnAdaugaBloc;
+        private Button btnBlocSus, btnBlocJos;
+        private Button btnAdaugaIdee, btnStergeIdee;
 
-        private System.Windows.Forms.Panel panelEditareBloc;
-        private System.Windows.Forms.TextBox txtBlockId;
-        private System.Windows.Forms.TextBox txtBlockText;
-        private System.Windows.Forms.ListBox lstDecizii;
-        private System.Windows.Forms.Button btnAdaugaDecizie;
-        private System.Windows.Forms.Button btnStergeDecizie;
-        private System.Windows.Forms.TextBox txtDecizieText;
-        private System.Windows.Forms.TextBox txtDecizieDestinatie;
-        private System.Windows.Forms.TextBox txtDecizieEfecte;
+        // ── Panel editare BLOC ────────────────────────────────────────────────
+        private Panel panelEditareBloc;
+        private Label lblEditareBlocTitlu, lblBlockIdTitlu, lblBlockTextTitlu;
+        private TextBox txtBlockId, txtBlockText;
+        private Button btnStergeBloc;
 
-        // Butoane noi pentru ordonare Decizii
-        private System.Windows.Forms.Button btnDecizieSus;
-        private System.Windows.Forms.Button btnDecizieJos;
+        // Câmpuri noi pentru tipuri de blocuri
+        private Label lblBlockTypeTitlu;
+        private ComboBox cmbBlockType;
+        private Label lblNextBlockTitlu;
+        private TextBox txtNextBlock;
 
-        // Etichetele text fixe
-        private System.Windows.Forms.Label lblStatusuriTitlu;
-        private System.Windows.Forms.Label lblStructuraTitlu;
-        private System.Windows.Forms.Label lblEditareBlocTitlu;
-        private System.Windows.Forms.Label lblBlockIdTitlu;
-        private System.Windows.Forms.Label lblBlockTextTitlu;
-        private System.Windows.Forms.Label lblDeciziiTitlu;
-        private System.Windows.Forms.Label lblDecizieTextTitlu;
-        private System.Windows.Forms.Label lblDecizieDestinatieTitlu;
-        private System.Windows.Forms.Label lblDecizieEfecteTitlu;
+        // Decizii
+        private Label lblDeciziiTitlu;
+        private ListBox lstDecizii;
+        private Button btnAdaugaDecizie, btnStergeDecizie, btnDecizieSus, btnDecizieJos;
 
+        // Câmpuri decizie
+        private Label lblDecizieTextTitlu, lblDecizieDestinatieTitlu;
+        private TextBox txtDecizieText, txtDecizieDestinatie;
+
+        // Unlock idee
+        private Label lblUnlocksIdee;
+        private ComboBox cmbUnlocksIdee;
+
+        // Condiție
+        private Label lblCondTitlu, lblCondProp, lblCondOp, lblCondVal;
+        private ComboBox cmbCondTip;         // Fără / Comparație / AND / OR
+        private ComboBox cmbCondProp, cmbCondOp;
+        private NumericUpDown numCondVal;
+
+        // Condiție AND/OR – lista de copii
+        private Label lblCondCopiiTitlu;
+        private ListBox lstCondCopii;
+        private Button btnAdaugaCondCopil, btnStergeCondCopil;
+        private Label lblCondCopilProp, lblCondCopilOp, lblCondCopilVal;
+        private ComboBox cmbCondCopilProp, cmbCondCopilOp;
+        private NumericUpDown numCondCopilVal;
+
+        // Efecte
+        private Label lblDecizieEfecteTitlu;
+        private TextBox txtDecizieEfecte;
+
+        // ── Panel editare IDEE ────────────────────────────────────────────────
+        private Panel panelEditareIdee;
+        private Label lblEditareIdeeTitlu, lblIdeeIdTitlu, lblIdeeNumeTitlu;
+        private TextBox txtIdeeId, txtIdeeNume;
+        private Label lblNiveluriTitlu;
+        private ListBox lstNivele;
+        private Button btnAdaugaNivel, btnStergeNivel, btnNivelSus, btnNivelJos;
+        private Label lblNivelNrTitlu, lblNivelDescTitlu, lblNivelInnTitlu, lblNivelStresTitlu, lblNivelProgTitlu;
+        private NumericUpDown numNivelNr, numNivelInn, numNivelStres, numNivelProg;
+        private TextBox txtNivelDesc;
+
+        // ═════════════════════════════════════════════════════════════════════
         public FormEditor()
         {
             InitializeComponent();
-            ConfiguratieInitialaUI();
-        }
-
-        private void ConfiguratieInitialaUI()
-        {
             SetareStareEditare(false);
             panelEditareBloc.Visible = false;
+            panelEditareIdee.Visible = false;
         }
 
         private void SetareStareEditare(bool activa)
         {
-            txtTitluPoveste.Enabled = activa;
-            lstStatusuri.Enabled = activa;
-            txtStatusNume.Enabled = activa;
-            btnAdaugaStatus.Enabled = activa;
-            btnStergeStatus.Enabled = activa;
-            treeViewStructura.Enabled = activa;
-            btnAdaugaZi.Enabled = activa;
-            btnAdaugaBloc.Enabled = activa;
-            btnSalveaza.Enabled = activa;
-
-            // Activare butoane ordonare globale
-            btnStatusSus.Enabled = activa;
-            btnStatusJos.Enabled = activa;
-            btnBlocSus.Enabled = activa;
-            btnBlocJos.Enabled = activa;
+            foreach (Control c in new Control[] {
+                txtTitluPoveste, lstStatusuri, txtStatusNume,
+                btnAdaugaStatus, btnStergeStatus, btnStatusSus, btnStatusJos,
+                treeViewStructura, btnAdaugaZi, btnStergeZi,
+                btnAdaugaBloc, btnBlocSus, btnBlocJos, btnSalveaza,
+                btnAdaugaIdee, btnStergeIdee })
+                c.Enabled = activa;
         }
 
-        // =====================================================================
-        // EVENIMENTE JSON & WORKSPACE
-        // =====================================================================
-
+        // ── JSON I/O ──────────────────────────────────────────────────────────
         private void btnCreazaNoua_Click(object sender, EventArgs e)
         {
             _povesteCurenta = new StoryJsonDefinition
@@ -107,415 +123,33 @@ namespace proiect_poo
                 Ideas = new List<IdeaJsonDefinition>(),
                 Days = new List<DayJsonDefinition>()
             };
-
-            _povesteCurenta.Properties.Add(new PropertyJsonDefinition { Key = "stres", HudLabel = "Stres", Min = 0, Max = 100, Initial = 25, VisibleInHud = true });
-
-            var primaZi = new DayJsonDefinition { Name = "Ziua 1", Blocks = new List<BlockJsonDefinition>() };
-            var primulBloc = new BlockJsonDefinition
+            _povesteCurenta.Properties.Add(new PropertyJsonDefinition
+            { Key = "stres", HudLabel = "Stres", Min = 0, Max = 100, Initial = 25, VisibleInHud = true });
+            var zi = new DayJsonDefinition { Id = "zi1", Name = "Ziua 1", Blocks = new List<BlockJsonDefinition>() };
+            zi.Blocks.Add(new BlockJsonDefinition
             {
                 Id = "start_1",
-                Text = "Scrie textul de început aici...",
+                Text = "Text de start...",
                 BlockType = "normal",
                 Decisions = new List<DecisionJsonDefinition>()
-            };
-            primaZi.Blocks.Add(primulBloc);
-            _povesteCurenta.Days.Add(primaZi);
-
+            });
+            _povesteCurenta.Days.Add(zi);
             _caleFichierCurent = "";
             AfiseazaWorkspace();
         }
 
         private void btnIncarcaExistenta_Click(object sender, EventArgs e)
         {
-            using (OpenFileDialog ofd = new OpenFileDialog())
+            using (var ofd = new OpenFileDialog { Filter = "JSON (*.json)|*.json" })
             {
-                ofd.Filter = "Fișiere JSON (*.json)|*.json";
-                if (ofd.ShowDialog() == DialogResult.OK)
+                if (ofd.ShowDialog() != DialogResult.OK) return;
+                try
                 {
-                    try
-                    {
-                        _povesteCurenta = JsonManager.IncarcaPoveste(ofd.FileName);
-                        _caleFichierCurent = ofd.FileName;
-                        AfiseazaWorkspace();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Eroare la deschiderea fișierului: " + ex.Message);
-                    }
+                    _povesteCurenta = JsonManager.IncarcaPoveste(ofd.FileName);
+                    _caleFichierCurent = ofd.FileName;
+                    AfiseazaWorkspace();
                 }
-            }
-        }
-
-        private void AfiseazaWorkspace()
-        {
-            SetareStareEditare(true);
-            panelEditareBloc.Visible = false;
-            _blocCurent = null;
-
-            txtTitluPoveste.Text = _povesteCurenta.Title;
-            ActualizeazaTreeView();
-            ActualizeazaListaStatusuri();
-        }
-
-        // =====================================================================
-        // REFRESH-URI INTERFAȚĂ
-        // =====================================================================
-
-        private void ActualizeazaTreeView()
-        {
-            treeViewStructura.Nodes.Clear();
-            if (_povesteCurenta.Days == null) return;
-
-            foreach (var zi in _povesteCurenta.Days)
-            {
-                TreeNode nodZi = new TreeNode(zi.Name);
-                nodZi.Tag = zi;
-
-                if (zi.Blocks != null)
-                {
-                    foreach (var bloc in zi.Blocks)
-                    {
-                        TreeNode nodBloc = new TreeNode($"[{bloc.Id}] {SubsirText(bloc.Text, 15)}");
-                        nodBloc.Tag = bloc;
-                        nodZi.Nodes.Add(nodBloc);
-                    }
-                }
-                treeViewStructura.Nodes.Add(nodZi);
-            }
-            treeViewStructura.ExpandAll();
-        }
-
-        private void ActualizeazaListaStatusuri()
-        {
-            lstStatusuri.Items.Clear();
-            if (_povesteCurenta.Properties == null) return;
-
-            foreach (var prop in _povesteCurenta.Properties)
-            {
-                lstStatusuri.Items.Add(prop.Key);
-            }
-        }
-
-        private void ActualizeazaListaDecizii()
-        {
-            lstDecizii.Items.Clear();
-            if (_blocCurent?.Decisions == null) return;
-
-            for (int i = 0; i < _blocCurent.Decisions.Count; i++)
-            {
-                var dec = _blocCurent.Decisions[i];
-                lstDecizii.Items.Add($"Opț. {i + 1}: {SubsirText(dec.Text, 15)} -> [{dec.TargetBlock}]");
-            }
-        }
-
-        private void SelecteazaNodDupaTag(object tag)
-        {
-            if (tag == null) return;
-            foreach (TreeNode nodZi in treeViewStructura.Nodes)
-            {
-                if (nodZi.Tag == tag) { treeViewStructura.SelectedNode = nodZi; return; }
-                foreach (TreeNode nodBloc in nodZi.Nodes)
-                {
-                    if (nodBloc.Tag == tag) { treeViewStructura.SelectedNode = nodBloc; return; }
-                }
-            }
-        }
-
-        // =====================================================================
-        // LOGICA DE SELECTARE
-        // =====================================================================
-
-        private void treeViewStructura_AfterSelect(object sender, TreeViewEventArgs e)
-        {
-            if (e.Node?.Tag is BlockJsonDefinition bloc)
-            {
-                _blocCurent = bloc;
-                _decizieCurenta = null;
-
-                _seIncarcaDatele = true;
-
-                panelEditareBloc.Visible = true;
-                txtBlockId.Text = bloc.Id;
-                txtBlockText.Text = bloc.Text;
-
-                ActualizeazaListaDecizii();
-                SetareStareEditareDecizie(false);
-
-                _seIncarcaDatele = false;
-            }
-            else
-            {
-                _blocCurent = null;
-                panelEditareBloc.Visible = false;
-            }
-        }
-
-        private void lstDecizii_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            int idx = lstDecizii.SelectedIndex;
-            if (idx >= 0 && _blocCurent?.Decisions != null && idx < _blocCurent.Decisions.Count)
-            {
-                _decizieCurenta = _blocCurent.Decisions[idx];
-
-                _seIncarcaDatele = true;
-                txtDecizieText.Text = _decizieCurenta.Text;
-                txtDecizieDestinatie.Text = _decizieCurenta.TargetBlock;
-
-                if (_decizieCurenta.Effects != null)
-                {
-                    txtDecizieEfecte.Text = JsonConvert.SerializeObject(_decizieCurenta.Effects, Newtonsoft.Json.Formatting.Indented);
-                }
-                else
-                {
-                    txtDecizieEfecte.Text = "[]";
-                }
-
-                _seIncarcaDatele = false;
-                SetareStareEditareDecizie(true);
-            }
-            else
-            {
-                _decizieCurenta = null;
-                SetareStareEditareDecizie(false);
-            }
-        }
-
-        private void SetareStareEditareDecizie(bool activa)
-        {
-            txtDecizieText.Enabled = activa;
-            txtDecizieDestinatie.Enabled = activa;
-            txtDecizieEfecte.Enabled = activa;
-            btnDecizieSus.Enabled = activa;
-            btnDecizieJos.Enabled = activa;
-        }
-
-        // =====================================================================
-        // MODIFICĂRI LIVE
-        // =====================================================================
-
-        private void txtBlockId_TextChanged(object sender, EventArgs e)
-        {
-            if (_seIncarcaDatele || _blocCurent == null) return;
-            _blocCurent.Id = txtBlockId.Text;
-
-            if (treeViewStructura.SelectedNode != null)
-                treeViewStructura.SelectedNode.Text = $"[{_blocCurent.Id}] {SubsirText(_blocCurent.Text, 15)}";
-        }
-
-        private void txtBlockText_TextChanged(object sender, EventArgs e)
-        {
-            if (_seIncarcaDatele || _blocCurent == null) return;
-            _blocCurent.Text = txtBlockText.Text;
-
-            if (treeViewStructura.SelectedNode != null)
-                treeViewStructura.SelectedNode.Text = $"[{_blocCurent.Id}] {SubsirText(_blocCurent.Text, 15)}";
-        }
-
-        private void txtDecizieText_TextChanged(object sender, EventArgs e)
-        {
-            if (_seIncarcaDatele || _decizieCurenta == null) return;
-            _decizieCurenta.Text = txtDecizieText.Text;
-
-            _seIncarcaDatele = true;
-            ActualizeazaListaDecizii();
-            _seIncarcaDatele = false;
-        }
-
-        private void txtDecizieDestinatie_TextChanged(object sender, EventArgs e)
-        {
-            if (_seIncarcaDatele || _decizieCurenta == null) return;
-            _decizieCurenta.TargetBlock = txtDecizieDestinatie.Text;
-
-            _seIncarcaDatele = true;
-            ActualizeazaListaDecizii();
-            _seIncarcaDatele = false;
-        }
-
-        private void txtDecizieEfecte_TextChanged(object sender, EventArgs e)
-        {
-            if (_seIncarcaDatele || _decizieCurenta == null) return;
-
-            try
-            {
-                var efecteSalvate = JsonConvert.DeserializeObject<List<EffectJsonDefinition>>(txtDecizieEfecte.Text);
-                if (efecteSalvate != null)
-                {
-                    _decizieCurenta.Effects = efecteSalvate;
-                }
-            }
-            catch
-            {
-                // Ignorăm erorile temporare de sintaxă în timpul tastării
-            }
-        }
-
-        // =====================================================================
-        // LOGICA DE REORDONARE (SUS / JOS)
-        // =====================================================================
-
-        private void btnStatusSus_Click(object sender, EventArgs e)
-        {
-            int idx = lstStatusuri.SelectedIndex;
-            if (idx > 0 && _povesteCurenta?.Properties != null)
-            {
-                var prop = _povesteCurenta.Properties[idx];
-                _povesteCurenta.Properties.RemoveAt(idx);
-                _povesteCurenta.Properties.Insert(idx - 1, prop);
-                ActualizeazaListaStatusuri();
-                lstStatusuri.SelectedIndex = idx - 1;
-            }
-        }
-
-        private void btnStatusJos_Click(object sender, EventArgs e)
-        {
-            int idx = lstStatusuri.SelectedIndex;
-            if (idx >= 0 && idx < lstStatusuri.Items.Count - 1 && _povesteCurenta?.Properties != null)
-            {
-                var prop = _povesteCurenta.Properties[idx];
-                _povesteCurenta.Properties.RemoveAt(idx);
-                _povesteCurenta.Properties.Insert(idx + 1, prop);
-                ActualizeazaListaStatusuri();
-                lstStatusuri.SelectedIndex = idx + 1;
-            }
-        }
-
-        private void btnBlocSus_Click(object sender, EventArgs e)
-        {
-            TreeNode nodSelectat = treeViewStructura.SelectedNode;
-            if (nodSelectat == null || !(nodSelectat.Tag is BlockJsonDefinition bloc)) return;
-            TreeNode nodParinte = nodSelectat.Parent;
-            if (nodParinte == null || !(nodParinte.Tag is DayJsonDefinition zi)) return;
-
-            int idx = zi.Blocks.IndexOf(bloc);
-            if (idx > 0)
-            {
-                zi.Blocks.RemoveAt(idx);
-                zi.Blocks.Insert(idx - 1, bloc);
-                ActualizeazaTreeView();
-                SelecteazaNodDupaTag(bloc);
-            }
-        }
-
-        private void btnBlocJos_Click(object sender, EventArgs e)
-        {
-            TreeNode nodSelectat = treeViewStructura.SelectedNode;
-            if (nodSelectat == null || !(nodSelectat.Tag is BlockJsonDefinition bloc)) return;
-            TreeNode nodParinte = nodSelectat.Parent;
-            if (nodParinte == null || !(nodParinte.Tag is DayJsonDefinition zi)) return;
-
-            int idx = zi.Blocks.IndexOf(bloc);
-            if (idx >= 0 && idx < zi.Blocks.Count - 1)
-            {
-                zi.Blocks.RemoveAt(idx);
-                zi.Blocks.Insert(idx + 1, bloc);
-                ActualizeazaTreeView();
-                SelecteazaNodDupaTag(bloc);
-            }
-        }
-
-        private void btnDecizieSus_Click(object sender, EventArgs e)
-        {
-            int idx = lstDecizii.SelectedIndex;
-            if (idx > 0 && _blocCurent?.Decisions != null)
-            {
-                var dec = _blocCurent.Decisions[idx];
-                _blocCurent.Decisions.RemoveAt(idx);
-                _blocCurent.Decisions.Insert(idx - 1, dec);
-                ActualizeazaListaDecizii();
-                lstDecizii.SelectedIndex = idx - 1;
-            }
-        }
-
-        private void btnDecizieJos_Click(object sender, EventArgs e)
-        {
-            int idx = lstDecizii.SelectedIndex;
-            if (idx >= 0 && idx < lstDecizii.Items.Count - 1 && _blocCurent?.Decisions != null)
-            {
-                var dec = _blocCurent.Decisions[idx];
-                _blocCurent.Decisions.RemoveAt(idx);
-                _blocCurent.Decisions.Insert(idx + 1, dec);
-                ActualizeazaListaDecizii();
-                lstDecizii.SelectedIndex = idx + 1;
-            }
-        }
-
-        // =====================================================================
-        // ADAUGĂRI / ȘTERGERI DE SUB-ELEMENTE
-        // =====================================================================
-
-        private void btnAdaugaStatus_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtStatusNume.Text)) return;
-            if (_povesteCurenta.Properties == null) _povesteCurenta.Properties = new List<PropertyJsonDefinition>();
-
-            _povesteCurenta.Properties.Add(new PropertyJsonDefinition
-            {
-                Key = txtStatusNume.Text,
-                HudLabel = txtStatusNume.Text,
-                Min = 0,
-                Max = 100,
-                Initial = 0,
-                VisibleInHud = true
-            });
-
-            txtStatusNume.Clear();
-            ActualizeazaListaStatusuri();
-        }
-
-        private void btnStergeStatus_Click(object sender, EventArgs e)
-        {
-            int idx = lstStatusuri.SelectedIndex;
-            if (idx >= 0)
-            {
-                _povesteCurenta.Properties.RemoveAt(idx);
-                ActualizeazaListaStatusuri();
-            }
-        }
-
-        private void btnAdaugaZi_Click(object sender, EventArgs e)
-        {
-            int numarZile = _povesteCurenta.Days.Count + 1;
-            _povesteCurenta.Days.Add(new DayJsonDefinition { Id = "zi" + numarZile, Name = "Ziua " + numarZile, Blocks = new List<BlockJsonDefinition>() });
-            ActualizeazaTreeView();
-        }
-
-        private void btnAdaugaBloc_Click(object sender, EventArgs e)
-        {
-            TreeNode nodSelectat = treeViewStructura.SelectedNode;
-            DayJsonDefinition ziTinta = null;
-            if (nodSelectat?.Tag is DayJsonDefinition) ziTinta = (DayJsonDefinition)nodSelectat.Tag;
-            else if (nodSelectat?.Parent?.Tag is DayJsonDefinition) ziTinta = (DayJsonDefinition)nodSelectat.Parent.Tag;
-
-            if (ziTinta == null) { MessageBox.Show("Selectează o Zi din listă!"); return; }
-
-            ziTinta.Blocks.Add(new BlockJsonDefinition
-            {
-                Id = "block_nou_" + Guid.NewGuid().ToString().Substring(0, 4),
-                Text = "Text poveste nou...",
-                BlockType = "normal",
-                Decisions = new List<DecisionJsonDefinition>()
-            });
-            ActualizeazaTreeView();
-        }
-
-        private void btnAdaugaDecizie_Click(object sender, EventArgs e)
-        {
-            if (_blocCurent == null) return;
-            if (_blocCurent.Decisions == null) _blocCurent.Decisions = new List<DecisionJsonDefinition>();
-
-            _blocCurent.Decisions.Add(new DecisionJsonDefinition { Text = "Opțiune nouă...", TargetBlock = "block_z1_dimineata", Effects = new List<EffectJsonDefinition>() });
-            ActualizeazaListaDecizii();
-        }
-
-        private void btnStergeDecizie_Click(object sender, EventArgs e)
-        {
-            int idx = lstDecizii.SelectedIndex;
-            if (idx >= 0 && _blocCurent?.Decisions != null)
-            {
-                _blocCurent.Decisions.RemoveAt(idx);
-                _decizieCurenta = null;
-                ActualizeazaListaDecizii();
-                SetareStareEditareDecizie(false);
+                catch (Exception ex) { MessageBox.Show("Eroare: " + ex.Message); }
             }
         }
 
@@ -524,372 +158,1004 @@ namespace proiect_poo
             _povesteCurenta.Title = txtTitluPoveste.Text;
             if (string.IsNullOrEmpty(_caleFichierCurent))
             {
-                using (SaveFileDialog sfd = new SaveFileDialog())
+                using (var sfd = new SaveFileDialog { Filter = "JSON (*.json)|*.json" })
                 {
-                    sfd.Filter = "Fișiere JSON (*.json)|*.json";
-                    if (sfd.ShowDialog() == DialogResult.OK) _caleFichierCurent = sfd.FileName;
-                    else return;
+                    if (sfd.ShowDialog() != DialogResult.OK) return;
+                    _caleFichierCurent = sfd.FileName;
                 }
             }
             try
             {
                 JsonManager.SalveazaPoveste(_caleFichierCurent, _povesteCurenta);
-                MessageBox.Show("Povestea a fost salvată cu succes!");
+                MessageBox.Show("Salvat!");
             }
             catch (Exception ex) { MessageBox.Show("Eroare la salvare: " + ex.Message); }
         }
 
-        private string SubsirText(string text, int lungimeMax)
+        private void AfiseazaWorkspace()
         {
-            if (string.IsNullOrEmpty(text)) return "";
-            return text.Length <= lungimeMax ? text : text.Substring(0, lungimeMax) + "...";
+            SetareStareEditare(true);
+            panelEditareBloc.Visible = false;
+            panelEditareIdee.Visible = false;
+            _blocCurent = null; _ideeCurenta = null;
+            txtTitluPoveste.Text = _povesteCurenta.Title;
+            ActualizeazaTreeView();
+            ActualizeazaListaStatusuri();
         }
 
-        // =====================================================================
-        // CONSTRUCTOR INITIALIZE COMPONENT - FORMAT CLASIC COMPATIBIL DESIGNER
-        // =====================================================================
+        // ── TreeView ──────────────────────────────────────────────────────────
+        private void ActualizeazaTreeView()
+        {
+            treeViewStructura.Nodes.Clear();
+
+            var nodZile = new TreeNode("📅 Zile & Blocuri") { Tag = "root_zile" };
+            foreach (var zi in _povesteCurenta.Days ?? new List<DayJsonDefinition>())
+            {
+                var nodZi = new TreeNode(zi.Name) { Tag = zi };
+                foreach (var b in zi.Blocks ?? new List<BlockJsonDefinition>())
+                    nodZi.Nodes.Add(new TreeNode($"[{b.Id}] {Scurt(b.Text, 15)}") { Tag = b });
+                nodZile.Nodes.Add(nodZi);
+            }
+            treeViewStructura.Nodes.Add(nodZile);
+
+            var nodIdei = new TreeNode("💡 Idei") { Tag = "root_idei" };
+            foreach (var idee in _povesteCurenta.Ideas ?? new List<IdeaJsonDefinition>())
+            {
+                var nodIdee = new TreeNode($"[{idee.Id}] {idee.Name}") { Tag = idee };
+                foreach (var n in idee.ResearchLevels ?? new List<ResearchLevelJsonDefinition>())
+                    nodIdee.Nodes.Add(new TreeNode($"Nivel {n.Level}: {Scurt(n.Description, 20)}") { Tag = n });
+                nodIdei.Nodes.Add(nodIdee);
+            }
+            treeViewStructura.Nodes.Add(nodIdei);
+
+            treeViewStructura.ExpandAll();
+        }
+
+        private void treeViewStructura_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            var tag = e.Node?.Tag;
+
+            if (tag is BlockJsonDefinition bloc)
+            {
+                _blocCurent = bloc; _ideeCurenta = null;
+                panelEditareBloc.Visible = true;
+                panelEditareIdee.Visible = false;
+                _seIncarcaDatele = true;
+
+                txtBlockId.Text = bloc.Id;
+                txtBlockText.Text = bloc.Text;
+                SelecteazaCombo(cmbBlockType, bloc.BlockType ?? "normal");
+                txtNextBlock.Text = bloc.NextBlock ?? "";
+
+                ActualizeazaVizibilitateTipBloc();
+                ActualizeazaListaDecizii();
+                SetareStareEditareDecizie(false);
+
+                _seIncarcaDatele = false;
+                return;
+            }
+
+            if (tag is IdeaJsonDefinition idee)
+            {
+                _ideeCurenta = idee; _blocCurent = null;
+                panelEditareBloc.Visible = false;
+                panelEditareIdee.Visible = true;
+                _seIncarcaDatele = true;
+                txtIdeeId.Text = idee.Id;
+                txtIdeeNume.Text = idee.Name;
+                ActualizeazaListaNivele();
+                SetareStareEditareNivel(false);
+                _seIncarcaDatele = false;
+                return;
+            }
+
+            if (tag is ResearchLevelJsonDefinition nivel)
+            {
+                panelEditareBloc.Visible = false;
+                panelEditareIdee.Visible = true;
+                if (_ideeCurenta != null)
+                {
+                    int idx = _ideeCurenta.ResearchLevels.IndexOf(nivel);
+                    if (idx >= 0) { _seIncarcaDatele = true; lstNivele.SelectedIndex = idx; _seIncarcaDatele = false; }
+                }
+                return;
+            }
+
+            panelEditareBloc.Visible = false;
+            panelEditareIdee.Visible = false;
+            _blocCurent = null; _ideeCurenta = null;
+        }
+
+        // ── Statusuri ─────────────────────────────────────────────────────────
+        private void ActualizeazaListaStatusuri()
+        {
+            lstStatusuri.Items.Clear();
+            foreach (var p in _povesteCurenta.Properties ?? new List<PropertyJsonDefinition>())
+                lstStatusuri.Items.Add(p.Key);
+        }
+        private void btnAdaugaStatus_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtStatusNume.Text)) return;
+            _povesteCurenta.Properties.Add(new PropertyJsonDefinition
+            { Key = txtStatusNume.Text, HudLabel = txtStatusNume.Text, Min = 0, Max = 100, Initial = 0, VisibleInHud = true });
+            txtStatusNume.Clear(); ActualizeazaListaStatusuri();
+        }
+        private void btnStergeStatus_Click(object sender, EventArgs e)
+        { int i = lstStatusuri.SelectedIndex; if (i >= 0) { _povesteCurenta.Properties.RemoveAt(i); ActualizeazaListaStatusuri(); } }
+        private void btnStatusSus_Click(object sender, EventArgs e) =>
+            ReordoneazaLista(_povesteCurenta.Properties, lstStatusuri, -1, ActualizeazaListaStatusuri);
+        private void btnStatusJos_Click(object sender, EventArgs e) =>
+            ReordoneazaLista(_povesteCurenta.Properties, lstStatusuri, +1, ActualizeazaListaStatusuri);
+
+        // ── Zile & Blocuri ────────────────────────────────────────────────────
+        private void btnAdaugaZi_Click(object sender, EventArgs e)
+        {
+            int n = (_povesteCurenta.Days?.Count ?? 0) + 1;
+            _povesteCurenta.Days.Add(new DayJsonDefinition
+            { Id = "zi" + n, Name = "Ziua " + n, Blocks = new List<BlockJsonDefinition>() });
+            ActualizeazaTreeView();
+        }
+
+        private void btnStergeZi_Click(object sender, EventArgs e)
+        {
+            var nod = treeViewStructura.SelectedNode;
+            DayJsonDefinition zi = null;
+            if (nod?.Tag is DayJsonDefinition) zi = (DayJsonDefinition)nod.Tag;
+            else if (nod?.Parent?.Tag is DayJsonDefinition) zi = (DayJsonDefinition)nod.Parent.Tag;
+            if (zi == null) { MessageBox.Show("Selectează o zi din arbore."); return; }
+            if (MessageBox.Show($"Ștergi ziua '{zi.Name}' și toate blocurile ei?",
+                "Confirmare", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+            _povesteCurenta.Days.Remove(zi);
+            panelEditareBloc.Visible = false;
+            ActualizeazaTreeView();
+        }
+
+        private void btnAdaugaBloc_Click(object sender, EventArgs e)
+        {
+            var nod = treeViewStructura.SelectedNode;
+            DayJsonDefinition zi = null;
+            if (nod?.Tag is DayJsonDefinition) zi = (DayJsonDefinition)nod.Tag;
+            else if (nod?.Parent?.Tag is DayJsonDefinition) zi = (DayJsonDefinition)nod.Parent.Tag;
+            if (zi == null) { MessageBox.Show("Selectează o zi din arbore!"); return; }
+            var bloc = new BlockJsonDefinition
+            {
+                Id = "bloc_" + Guid.NewGuid().ToString().Substring(0, 4),
+                Text = "Text nou...",
+                BlockType = "normal",
+                Decisions = new List<DecisionJsonDefinition>()
+            };
+            zi.Blocks.Add(bloc);
+            ActualizeazaTreeView(); SelecteazaTag(bloc);
+        }
+
+        private void btnStergeBloc_Click(object sender, EventArgs e)
+        {
+            if (_blocCurent == null) return;
+            var zi = _povesteCurenta.Days?.FirstOrDefault(z => z.Blocks.Contains(_blocCurent));
+            if (zi == null) return;
+            if (MessageBox.Show($"Ștergi blocul '[{_blocCurent.Id}]'?",
+                "Confirmare", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+            zi.Blocks.Remove(_blocCurent);
+            _blocCurent = null;
+            panelEditareBloc.Visible = false;
+            ActualizeazaTreeView();
+        }
+
+        private void btnBlocSus_Click(object sender, EventArgs e)
+        {
+            if (!(treeViewStructura.SelectedNode?.Tag is BlockJsonDefinition b)) return;
+            if (!(treeViewStructura.SelectedNode?.Parent?.Tag is DayJsonDefinition zi)) return;
+            int i = zi.Blocks.IndexOf(b);
+            if (i > 0) { zi.Blocks.RemoveAt(i); zi.Blocks.Insert(i - 1, b); ActualizeazaTreeView(); SelecteazaTag(b); }
+        }
+        private void btnBlocJos_Click(object sender, EventArgs e)
+        {
+            if (!(treeViewStructura.SelectedNode?.Tag is BlockJsonDefinition b)) return;
+            if (!(treeViewStructura.SelectedNode?.Parent?.Tag is DayJsonDefinition zi)) return;
+            int i = zi.Blocks.IndexOf(b);
+            if (i < zi.Blocks.Count - 1) { zi.Blocks.RemoveAt(i); zi.Blocks.Insert(i + 1, b); ActualizeazaTreeView(); SelecteazaTag(b); }
+        }
+
+        // ── Editare bloc – câmpuri live ───────────────────────────────────────
+        private void txtBlockId_TextChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele || _blocCurent == null) return;
+            _blocCurent.Id = txtBlockId.Text;
+            if (treeViewStructura.SelectedNode != null)
+                treeViewStructura.SelectedNode.Text = $"[{_blocCurent.Id}] {Scurt(_blocCurent.Text, 15)}";
+        }
+        private void txtBlockText_TextChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele || _blocCurent == null) return;
+            _blocCurent.Text = txtBlockText.Text;
+            if (treeViewStructura.SelectedNode != null)
+                treeViewStructura.SelectedNode.Text = $"[{_blocCurent.Id}] {Scurt(_blocCurent.Text, 15)}";
+        }
+        private void cmbBlockType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele || _blocCurent == null) return;
+            _blocCurent.BlockType = cmbBlockType.SelectedItem?.ToString() ?? "normal";
+            ActualizeazaVizibilitateTipBloc();
+        }
+        private void txtNextBlock_TextChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele || _blocCurent == null) return;
+            _blocCurent.NextBlock = txtNextBlock.Text;
+        }
+
+        private void ActualizeazaVizibilitateTipBloc()
+        {
+            if (_blocCurent == null) return;
+            bool esteResearch = (_blocCurent.BlockType == "research");
+
+            // Câmpul de NextBlock rămâne vizibil pentru a permite tranziții directe dacă nu se pun decizii
+            lblNextBlockTitlu.Visible = esteResearch;
+            txtNextBlock.Visible = esteResearch;
+
+            // Reactivăm complet controalele pentru decizii, indiferent de tipul blocului
+            lstDecizii.Enabled = true;
+            btnAdaugaDecizie.Enabled = true;
+            btnStergeDecizie.Enabled = true;
+        }
+
+        // ── Decizii ───────────────────────────────────────────────────────────
+        private void ActualizeazaListaDecizii()
+        {
+            lstDecizii.Items.Clear();
+            if (_blocCurent?.Decisions == null) return;
+            for (int i = 0; i < _blocCurent.Decisions.Count; i++)
+            {
+                var d = _blocCurent.Decisions[i];
+                lstDecizii.Items.Add($"Opț.{i + 1}: {Scurt(d.Text, 15)} → [{d.TargetBlock}]");
+            }
+        }
+
+        private void lstDecizii_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int idx = lstDecizii.SelectedIndex;
+            if (idx < 0 || _blocCurent?.Decisions == null || idx >= _blocCurent.Decisions.Count)
+            { _decizieCurenta = null; SetareStareEditareDecizie(false); return; }
+
+            _decizieCurenta = _blocCurent.Decisions[idx];
+            _seIncarcaDatele = true;
+
+            txtDecizieText.Text = _decizieCurenta.Text;
+            txtDecizieDestinatie.Text = _decizieCurenta.TargetBlock;
+            txtDecizieEfecte.Text = JsonConvert.SerializeObject(
+                _decizieCurenta.Effects ?? new List<EffectJsonDefinition>(), Formatting.Indented);
+
+            // Unlock idee — reîncarcă opțiunile din lista de idei curentă
+            ActualizeazaComboIdei();
+            string uid = _decizieCurenta.UnlocksIdeaId;
+            cmbUnlocksIdee.SelectedIndex = string.IsNullOrEmpty(uid) ? 0
+                : Math.Max(0, cmbUnlocksIdee.Items.Cast<string>().ToList().IndexOf(uid));
+
+            // ── FIX BUG 2: Populăm listele cu proprietățile reale din poveste (stres, progress, etc.)
+            PopuleazaComboProprietati(cmbCondProp);
+            PopuleazaComboProprietati(cmbCondCopilProp);
+
+            // Condiție
+            IncarcaConditionUI(_decizieCurenta.Condition);
+
+            _seIncarcaDatele = false;
+            SetareStareEditareDecizie(true);
+        }
+
+        private void SetareStareEditareDecizie(bool activa)
+        {
+            txtDecizieText.Enabled = activa;
+            txtDecizieDestinatie.Enabled = activa;
+            txtDecizieEfecte.Enabled = activa;
+            cmbUnlocksIdee.Enabled = activa;
+            cmbCondTip.Enabled = activa;
+            btnDecizieSus.Enabled = activa;
+            btnDecizieJos.Enabled = activa;
+            if (!activa) AscundeControleCond();
+        }
+
+        private void txtDecizieText_TextChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele || _decizieCurenta == null) return;
+            _decizieCurenta.Text = txtDecizieText.Text;
+            _seIncarcaDatele = true; ActualizeazaListaDecizii(); _seIncarcaDatele = false;
+        }
+        private void txtDecizieDestinatie_TextChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele || _decizieCurenta == null) return;
+            _decizieCurenta.TargetBlock = txtDecizieDestinatie.Text;
+            _seIncarcaDatele = true; ActualizeazaListaDecizii(); _seIncarcaDatele = false;
+        }
+        private void txtDecizieEfecte_TextChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele || _decizieCurenta == null) return;
+            try
+            {
+                var ef = JsonConvert.DeserializeObject<List<EffectJsonDefinition>>(txtDecizieEfecte.Text);
+                if (ef != null) _decizieCurenta.Effects = ef;
+            }
+            catch { }
+        }
+
+        private void btnAdaugaDecizie_Click(object sender, EventArgs e)
+        {
+            if (_blocCurent == null) return;
+            _blocCurent.Decisions.Add(new DecisionJsonDefinition
+            {
+                Text = "Opțiune nouă...",
+                TargetBlock = "block_id",
+                Effects = new List<EffectJsonDefinition>()
+            });
+            ActualizeazaListaDecizii();
+            lstDecizii.SelectedIndex = lstDecizii.Items.Count - 1;
+        }
+        private void btnStergeDecizie_Click(object sender, EventArgs e)
+        {
+            int i = lstDecizii.SelectedIndex;
+            if (i < 0 || _blocCurent?.Decisions == null) return;
+            _blocCurent.Decisions.RemoveAt(i);
+            _decizieCurenta = null;
+            ActualizeazaListaDecizii();
+            SetareStareEditareDecizie(false);
+        }
+        private void btnDecizieSus_Click(object sender, EventArgs e) =>
+            ReordoneazaLista(_blocCurent?.Decisions, lstDecizii, -1, ActualizeazaListaDecizii);
+        private void btnDecizieJos_Click(object sender, EventArgs e) =>
+            ReordoneazaLista(_blocCurent?.Decisions, lstDecizii, +1, ActualizeazaListaDecizii);
+
+        // ── Unlock idee ───────────────────────────────────────────────────────
+        private void ActualizeazaComboIdei()
+        {
+            cmbUnlocksIdee.Items.Clear();
+            cmbUnlocksIdee.Items.Add("(nicio idee)");
+            foreach (var idee in _povesteCurenta.Ideas ?? new List<IdeaJsonDefinition>())
+                cmbUnlocksIdee.Items.Add(idee.Id);
+            cmbUnlocksIdee.SelectedIndex = 0;
+        }
+
+        private void cmbUnlocksIdee_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele || _decizieCurenta == null) return;
+            _decizieCurenta.UnlocksIdeaId = cmbUnlocksIdee.SelectedIndex <= 0
+                ? null : cmbUnlocksIdee.SelectedItem?.ToString();
+        }
+
+        // ── Condiție ──────────────────────────────────────────────────────────
+        private void IncarcaConditionUI(ConditionNode cond)
+        {
+            AscundeControleCond();
+            lstCondCopii.Items.Clear();
+            _condChildCurent = null;
+
+            if (cond == null)
+            {
+                cmbCondTip.SelectedIndex = 0;
+                return;
+            }
+
+            if (cond is ComparisonNode comp)
+            {
+                cmbCondTip.SelectedIndex = 1;
+                AfiseazaControleCond(false);
+                _seIncarcaDatele = true;
+                SelecteazaCombo(cmbCondProp, comp.Property);
+                SelecteazaCombo(cmbCondOp, comp.Operator);
+                numCondVal.Value = comp.Value;
+                _seIncarcaDatele = false;
+            }
+            else if (cond is LogicalNode logic)
+            {
+                cmbCondTip.SelectedIndex = logic.Operator == "AND" ? 2 : 3;
+                AfiseazaControleCond(true);
+                foreach (var child in logic.Children ?? new List<ConditionNode>())
+                    if (child is ComparisonNode c)
+                        lstCondCopii.Items.Add($"{c.Property} {c.Operator} {c.Value}");
+            }
+        }
+
+        private void cmbCondTip_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele) return;
+            AscundeControleCond();
+
+            int sel = cmbCondTip.SelectedIndex;
+            if (sel == 0) { SalveazaCondition(); return; }
+            if (sel == 1) AfiseazaControleCond(false);
+            if (sel == 2 || sel == 3) AfiseazaControleCond(true);
+
+            SalveazaCondition();
+        }
+
+        private void AfiseazaControleCond(bool esteLogic)
+        {
+            bool aratSimple = !esteLogic;
+            lblCondProp.Visible = cmbCondProp.Visible = aratSimple;
+            lblCondOp.Visible = cmbCondOp.Visible = aratSimple;
+            lblCondVal.Visible = numCondVal.Visible = aratSimple;
+
+            lblCondCopiiTitlu.Visible = esteLogic;
+            lstCondCopii.Visible = esteLogic;
+            btnAdaugaCondCopil.Visible = esteLogic;
+            btnStergeCondCopil.Visible = esteLogic;
+            lblCondCopilProp.Visible = cmbCondCopilProp.Visible = esteLogic;
+            lblCondCopilOp.Visible = cmbCondCopilOp.Visible = esteLogic;
+            lblCondCopilVal.Visible = numCondCopilVal.Visible = esteLogic;
+        }
+
+        private void AscundeControleCond()
+        {
+            foreach (Control c in new Control[] {
+                lblCondProp, cmbCondProp, lblCondOp, cmbCondOp, lblCondVal, numCondVal,
+                lblCondCopiiTitlu, lstCondCopii, btnAdaugaCondCopil, btnStergeCondCopil,
+                lblCondCopilProp, cmbCondCopilProp, lblCondCopilOp, cmbCondCopilOp,
+                lblCondCopilVal, numCondCopilVal })
+                c.Visible = false;
+        }
+
+        private void SalveazaCondition()
+        {
+            if (_decizieCurenta == null) return;
+            int sel = cmbCondTip.SelectedIndex;
+
+            if (sel == 0) { _decizieCurenta.Condition = null; return; }
+
+            if (sel == 1)
+            {
+                _decizieCurenta.Condition = new ComparisonNode
+                {
+                    Property = cmbCondProp.SelectedItem?.ToString() ?? "",
+                    Operator = cmbCondOp.SelectedItem?.ToString() ?? ">=",
+                    Value = (int)numCondVal.Value
+                };
+                return;
+            }
+
+            var logic = new LogicalNode
+            {
+                Operator = sel == 2 ? "AND" : "OR",
+                Children = new List<ConditionNode>()
+            };
+            foreach (string item in lstCondCopii.Items)
+            {
+                var parts = item.Split(' ');
+                if (parts.Length == 3 && int.TryParse(parts[2], out int v))
+                    logic.Children.Add(new ComparisonNode { Property = parts[0], Operator = parts[1], Value = v });
+            }
+            _decizieCurenta.Condition = logic;
+        }
+
+        private void cmbCondProp_SelectedIndexChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele) SalveazaCondition(); }
+        private void cmbCondOp_SelectedIndexChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele) SalveazaCondition(); }
+        private void numCondVal_ValueChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele) SalveazaCondition(); }
+
+        private void lstCondCopii_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int idx = lstCondCopii.SelectedIndex;
+            if (idx < 0 || !(_decizieCurenta?.Condition is LogicalNode logic) || idx >= logic.Children.Count) return;
+
+            if (logic.Children[idx] is ComparisonNode c)
+            {
+                _seIncarcaDatele = true;
+                SelecteazaCombo(cmbCondCopilProp, c.Property);
+                SelecteazaCombo(cmbCondCopilOp, c.Operator);
+                numCondCopilVal.Value = c.Value;
+                _seIncarcaDatele = false;
+                _condChildCurent = c;
+            }
+        }
+
+        private void btnAdaugaCondCopil_Click(object sender, EventArgs e)
+        {
+            if (!(_decizieCurenta?.Condition is LogicalNode logic)) return;
+            var props = _povesteCurenta.Properties;
+            string prop = props?.Count > 0 ? props[0].Key : "stres";
+            logic.Children.Add(new ComparisonNode { Property = prop, Operator = ">=", Value = 0 });
+            ReincarcaListaCopii();
+            lstCondCopii.SelectedIndex = lstCondCopii.Items.Count - 1;
+        }
+
+        private void btnStergeCondCopil_Click(object sender, EventArgs e)
+        {
+            int idx = lstCondCopii.SelectedIndex;
+            if (idx < 0 || !(_decizieCurenta?.Condition is LogicalNode logic)) return;
+            logic.Children.RemoveAt(idx);
+            _condChildCurent = null;
+            ReincarcaListaCopii();
+        }
+
+        private void cmbCondCopilProp_SelectedIndexChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele) SalveazaChildCurent(); }
+        private void cmbCondCopilOp_SelectedIndexChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele) SalveazaChildCurent(); }
+        private void numCondCopilVal_ValueChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele) SalveazaChildCurent(); }
+
+        private void SalveazaChildCurent()
+        {
+            if (!(_condChildCurent is ComparisonNode c)) return;
+            c.Property = cmbCondCopilProp.SelectedItem?.ToString() ?? c.Property;
+            c.Operator = cmbCondCopilOp.SelectedItem?.ToString() ?? c.Operator;
+            c.Value = (int)numCondCopilVal.Value;
+            ReincarcaListaCopii();
+        }
+
+        private void ReincarcaListaCopii()
+        {
+            if (!(_decizieCurenta?.Condition is LogicalNode logic)) return;
+            int sel = lstCondCopii.SelectedIndex;
+            lstCondCopii.Items.Clear();
+            foreach (var child in logic.Children)
+                if (child is ComparisonNode c)
+                    lstCondCopii.Items.Add($"{c.Property} {c.Operator} {c.Value}");
+            if (sel < lstCondCopii.Items.Count) lstCondCopii.SelectedIndex = sel;
+        }
+
+        // ── Idei ──────────────────────────────────────────────────────────────
+        private void btnAdaugaIdee_Click(object sender, EventArgs e)
+        {
+            if (_povesteCurenta.Ideas == null) _povesteCurenta.Ideas = new List<IdeaJsonDefinition>();
+            var ideeNoua = new IdeaJsonDefinition
+            {
+                Id = "idea_" + Guid.NewGuid().ToString().Substring(0, 4),
+                Name = "Idee Nouă",
+                ResearchLevels = new List<ResearchLevelJsonDefinition>()
+            };
+            _povesteCurenta.Ideas.Add(ideeNoua);
+            ActualizeazaTreeView(); SelecteazaTag(ideeNoua);
+        }
+
+        private void btnStergeIdee_Click(object sender, EventArgs e)
+        {
+            if (_ideeCurenta == null) return;
+            if (MessageBox.Show($"Ștergi ideea '{_ideeCurenta.Name}'?", "Confirmare", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+            _povesteCurenta.Ideas.Remove(_ideeCurenta);
+            _ideeCurenta = null;
+            panelEditareIdee.Visible = false;
+            ActualizeazaTreeView();
+        }
+
+        private void txtIdeeId_TextChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele && _ideeCurenta != null) { _ideeCurenta.Id = txtIdeeId.Text; ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta); } }
+        private void txtIdeeNume_TextChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele && _ideeCurenta != null) { _ideeCurenta.Name = txtIdeeNume.Text; ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta); } }
+
+        // ── Nivele research ───────────────────────────────────────────────────
+        private void ActualizeazaListaNivele()
+        {
+            lstNivele.Items.Clear();
+            foreach (var n in _ideeCurenta?.ResearchLevels ?? new List<ResearchLevelJsonDefinition>())
+                lstNivele.Items.Add($"Nivel {n.Level}: {Scurt(n.Description, 25)}");
+        }
+
+        private void lstNivele_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int idx = lstNivele.SelectedIndex;
+            if (idx < 0 || idx >= (_ideeCurenta?.ResearchLevels?.Count ?? 0))
+            { _nivelCurent = null; SetareStareEditareNivel(false); return; }
+
+            _nivelCurent = _ideeCurenta.ResearchLevels[idx];
+            _seIncarcaDatele = true;
+            numNivelNr.Value = _nivelCurent.Level;
+            txtNivelDesc.Text = _nivelCurent.Description ?? "";
+            numNivelInn.Value = _nivelCurent.InnovationAdded;
+            numNivelStres.Value = _nivelCurent.StressCost;
+            numNivelProg.Value = _nivelCurent.ProgressAdded;
+            _seIncarcaDatele = false;
+            SetareStareEditareNivel(true);
+        }
+
+        private void SetareStareEditareNivel(bool a)
+        {
+            numNivelNr.Enabled = txtNivelDesc.Enabled = numNivelInn.Enabled =
+            numNivelStres.Enabled = numNivelProg.Enabled = btnNivelSus.Enabled = btnNivelJos.Enabled = a;
+        }
+
+        private void btnAdaugaNivel_Click(object sender, EventArgs e)
+        {
+            if (_ideeCurenta == null) return;
+            int nou = (_ideeCurenta.ResearchLevels.Count > 0 ? _ideeCurenta.ResearchLevels.Max(n => n.Level) : 0) + 1;
+            _ideeCurenta.ResearchLevels.Add(new ResearchLevelJsonDefinition
+            { Level = nou, Description = "Descriere nivel " + nou, InnovationAdded = 10, StressCost = 10, ProgressAdded = 10 });
+            ActualizeazaListaNivele(); ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta);
+            lstNivele.SelectedIndex = lstNivele.Items.Count - 1;
+        }
+        private void btnStergeNivel_Click(object sender, EventArgs e)
+        {
+            int i = lstNivele.SelectedIndex;
+            if (i < 0) return;
+            _ideeCurenta.ResearchLevels.RemoveAt(i); _nivelCurent = null;
+            ActualizeazaListaNivele(); ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta);
+            SetareStareEditareNivel(false);
+        }
+        private void btnNivelSus_Click(object sender, EventArgs e) =>
+            ReordoneazaLista(_ideeCurenta?.ResearchLevels, lstNivele, -1, ActualizeazaListaNivele);
+        private void btnNivelJos_Click(object sender, EventArgs e) =>
+            ReordoneazaLista(_ideeCurenta?.ResearchLevels, lstNivele, +1, ActualizeazaListaNivele);
+
+        private void numNivelNr_ValueChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele && _nivelCurent != null) { _nivelCurent.Level = (int)numNivelNr.Value; ActualizeazaListaNivele(); ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta); } }
+        private void txtNivelDesc_TextChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele && _nivelCurent != null) { _nivelCurent.Description = txtNivelDesc.Text; ActualizeazaListaNivele(); ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta); } }
+        private void numNivelInn_ValueChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele && _nivelCurent != null) _nivelCurent.InnovationAdded = (int)numNivelInn.Value; }
+        private void numNivelStres_ValueChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele && _nivelCurent != null) _nivelCurent.StressCost = (int)numNivelStres.Value; }
+        private void numNivelProg_ValueChanged(object sender, EventArgs e)
+        { if (!_seIncarcaDatele && _nivelCurent != null) _nivelCurent.ProgressAdded = (int)numNivelProg.Value; }
+
+        // ── Utilitare ─────────────────────────────────────────────────────────
+        private void ReordoneazaLista<T>(List<T> lista, ListBox lb, int dir, Action refresh)
+        {
+            if (lista == null) return;
+            int i = lb.SelectedIndex, dest = i + dir;
+            if (i < 0 || dest < 0 || dest >= lista.Count) return;
+            var item = lista[i]; lista.RemoveAt(i); lista.Insert(dest, item);
+            refresh(); lb.SelectedIndex = dest;
+        }
+
+        private void SelecteazaTag(object tag)
+        {
+            if (tag == null) return;
+            foreach (TreeNode root in treeViewStructura.Nodes)
+                foreach (TreeNode child in root.Nodes)
+                {
+                    if (child.Tag == tag) { treeViewStructura.SelectedNode = child; return; }
+                    foreach (TreeNode sub in child.Nodes)
+                        if (sub.Tag == tag) { treeViewStructura.SelectedNode = sub; return; }
+                }
+        }
+
+        private void SelecteazaCombo(ComboBox cmb, string val)
+{
+    if (cmb == null) return;
+    
+    int idx = cmb.Items.IndexOf(val);
+    if (idx >= 0)
+    {
+        cmb.SelectedIndex = idx;
+    }
+    else
+    {
+        // Schimbare de siguranță: selectăm primul element DOAR dacă lista nu e goală
+        if (cmb.Items.Count > 0)
+            cmb.SelectedIndex = 0;
+        else
+            cmb.SelectedIndex = -1; // -1 înseamnă că nu selectăm nimic (listă goală), prevenind crash-ul
+    }
+}
+
+        private string Scurt(string t, int max)
+        {
+            if (string.IsNullOrEmpty(t)) return "";
+            return t.Length <= max ? t : t.Substring(0, max) + "...";
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // InitializeComponent
+        // ═════════════════════════════════════════════════════════════════════
         private void InitializeComponent()
         {
-            this.txtTitluPoveste = new System.Windows.Forms.TextBox();
-            this.lblTitluPoveste = new System.Windows.Forms.Label();
-            this.treeViewStructura = new System.Windows.Forms.TreeView();
-            this.btnCreazaNoua = new System.Windows.Forms.Button();
-            this.btnIncarcaExistenta = new System.Windows.Forms.Button();
-            this.btnSalveaza = new System.Windows.Forms.Button();
-            this.btnAdaugaZi = new System.Windows.Forms.Button();
-            this.btnAdaugaBloc = new System.Windows.Forms.Button();
-            this.lstStatusuri = new System.Windows.Forms.ListBox();
-            this.txtStatusNume = new System.Windows.Forms.TextBox();
-            this.btnAdaugaStatus = new System.Windows.Forms.Button();
-            this.btnStergeStatus = new System.Windows.Forms.Button();
+            // ── Toolbar ──
+            btnCreazaNoua = new Button { Location = new Point(12, 12), Size = new Size(130, 30), Text = "➕ Poveste Nouă" };
+            btnIncarcaExistenta = new Button { Location = new Point(148, 12), Size = new Size(130, 30), Text = "📂 Deschide JSON" };
+            btnSalveaza = new Button { Location = new Point(908, 12), Size = new Size(130, 30), Text = "💾 Salvează" };
+            lblTitluPoveste = new Label { Location = new Point(300, 17), Size = new Size(60, 20), Text = "Titlu:" };
+            txtTitluPoveste = new TextBox { Location = new Point(360, 14), Size = new Size(300, 20) };
+            btnCreazaNoua.Click += btnCreazaNoua_Click;
+            btnIncarcaExistenta.Click += btnIncarcaExistenta_Click;
+            btnSalveaza.Click += btnSalveaza_Click;
 
-            // Instanțiere butoane reordonare stânga
-            this.btnStatusSus = new System.Windows.Forms.Button();
-            this.btnStatusJos = new System.Windows.Forms.Button();
-            this.btnBlocSus = new System.Windows.Forms.Button();
-            this.btnBlocJos = new System.Windows.Forms.Button();
+            // ── Stânga — Statusuri ──
+            lblStatusuriTitlu = new Label { Location = new Point(12, 55), Size = new Size(220, 18), Text = "📊 Statusuri:" };
+            lstStatusuri = new ListBox { Location = new Point(12, 75), Size = new Size(185, 82) };
+            btnStatusSus = new Button { Location = new Point(202, 75), Size = new Size(36, 40), Text = "▲" };
+            btnStatusJos = new Button { Location = new Point(202, 117), Size = new Size(36, 40), Text = "▼" };
+            txtStatusNume = new TextBox { Location = new Point(12, 162), Size = new Size(136, 20) };
+            btnAdaugaStatus = new Button { Location = new Point(154, 160), Size = new Size(40, 23), Text = "➕" };
+            btnStergeStatus = new Button { Location = new Point(198, 160), Size = new Size(40, 23), Text = "❌" };
+            btnStatusSus.Click += btnStatusSus_Click;
+            btnStatusJos.Click += btnStatusJos_Click;
+            btnAdaugaStatus.Click += btnAdaugaStatus_Click;
+            btnStergeStatus.Click += btnStergeStatus_Click;
 
-            this.panelEditareBloc = new System.Windows.Forms.Panel();
-            this.txtBlockId = new System.Windows.Forms.TextBox();
-            this.txtBlockText = new System.Windows.Forms.TextBox();
-            this.lstDecizii = new System.Windows.Forms.ListBox();
-            this.btnAdaugaDecizie = new System.Windows.Forms.Button();
-            this.btnStergeDecizie = new System.Windows.Forms.Button();
-            this.txtDecizieText = new System.Windows.Forms.TextBox();
-            this.txtDecizieDestinatie = new System.Windows.Forms.TextBox();
-            this.txtDecizieEfecte = new System.Windows.Forms.TextBox();
+            // ── Stânga — TreeView ──
+            lblStructuraTitlu = new Label { Location = new Point(12, 193), Size = new Size(220, 18), Text = "🌲 Structură:" };
+            treeViewStructura = new TreeView { Location = new Point(12, 213), Size = new Size(185, 370) };
+            btnBlocSus = new Button { Location = new Point(202, 213), Size = new Size(36, 35), Text = "▲" };
+            btnBlocJos = new Button { Location = new Point(202, 251), Size = new Size(36, 35), Text = "▼" };
+            btnAdaugaZi = new Button { Location = new Point(12, 592), Size = new Size(85, 26), Text = "📅 + Zi" };
+            btnStergeZi = new Button { Location = new Point(102, 592), Size = new Size(95, 26), Text = "🗑 - Zi" };
+            btnAdaugaBloc = new Button { Location = new Point(12, 623), Size = new Size(85, 26), Text = "📄 + Bloc" };
+            btnAdaugaIdee = new Button { Location = new Point(12, 654), Size = new Size(85, 26), Text = "💡 + Idee" };
+            btnStergeIdee = new Button { Location = new Point(102, 654), Size = new Size(95, 26), Text = "🗑 - Idee" };
+            treeViewStructura.AfterSelect += treeViewStructura_AfterSelect;
+            btnBlocSus.Click += btnBlocSus_Click;
+            btnBlocJos.Click += btnBlocJos_Click;
+            btnAdaugaZi.Click += btnAdaugaZi_Click;
+            btnStergeZi.Click += btnStergeZi_Click;
+            btnAdaugaBloc.Click += btnAdaugaBloc_Click;
+            btnAdaugaIdee.Click += btnAdaugaIdee_Click;
+            btnStergeIdee.Click += btnStergeIdee_Click;
 
-            // Instanțiere butoane reordonare dreapta
-            this.btnDecizieSus = new System.Windows.Forms.Button();
-            this.btnDecizieJos = new System.Windows.Forms.Button();
+            // ── Panel editare BLOC ──
+            panelEditareBloc = new Panel { Location = new Point(248, 55), Size = new Size(810, 690), BorderStyle = BorderStyle.FixedSingle };
 
-            this.lblStatusuriTitlu = new System.Windows.Forms.Label();
-            this.lblStructuraTitlu = new System.Windows.Forms.Label();
-            this.lblEditareBlocTitlu = new System.Windows.Forms.Label();
-            this.lblBlockIdTitlu = new System.Windows.Forms.Label();
-            this.lblBlockTextTitlu = new System.Windows.Forms.Label();
-            this.lblDeciziiTitlu = new System.Windows.Forms.Label();
-            this.lblDecizieTextTitlu = new System.Windows.Forms.Label();
-            this.lblDecizieDestinatieTitlu = new System.Windows.Forms.Label();
-            this.lblDecizieEfecteTitlu = new System.Windows.Forms.Label();
+            var lblBlocTitlu = new Label
+            {
+                Location = new Point(10, 10),
+                Size = new Size(300, 20),
+                Text = "📝 EDITARE BLOC",
+                Font = new Font("Arial", 10, FontStyle.Bold)
+            };
 
-            this.panelEditareBloc.SuspendLayout();
+            // Repoziționare elemente de control de sus pe o singură linie fluidă
+            lblBlockIdTitlu = new Label { Location = new Point(10, 43), Size = new Size(50, 20), Text = "ID Bloc:" };
+            txtBlockId = new TextBox { Location = new Point(65, 40), Size = new Size(130, 20) };
+
+            lblBlockTypeTitlu = new Label { Location = new Point(210, 43), Size = new Size(55, 20), Text = "Tip Bloc:" };
+            cmbBlockType = new ComboBox { Location = new Point(270, 40), Size = new Size(110, 22), DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbBlockType.Items.AddRange(new object[] { "normal", "research" });
+
+            lblNextBlockTitlu = new Label { Location = new Point(395, 43), Size = new Size(75, 20), Text = "Următorul ID:" };
+            txtNextBlock = new TextBox { Location = new Point(475, 40), Size = new Size(130, 20) };
+
+            btnStergeBloc = new Button { Location = new Point(685, 38), Size = new Size(110, 24), Text = "🗑 Șterge Bloc" };
+
+            lblBlockTextTitlu = new Label { Location = new Point(10, 73), Size = new Size(200, 15), Text = "Text poveste:" };
+            txtBlockText = new TextBox { Location = new Point(10, 91), Size = new Size(785, 110), Multiline = true, ScrollBars = ScrollBars.Vertical };
+
+            txtBlockId.TextChanged += txtBlockId_TextChanged;
+            txtBlockText.TextChanged += txtBlockText_TextChanged;
+            cmbBlockType.SelectedIndexChanged += cmbBlockType_SelectedIndexChanged;
+            txtNextBlock.TextChanged += txtNextBlock_TextChanged;
+            btnStergeBloc.Click += btnStergeBloc_Click;
+
+            var lblDecizii = new Label
+            {
+                Location = new Point(10, 215),
+                Size = new Size(200, 20),
+                Text = "🔘 Decizii:",
+                Font = new Font("Arial", 9, FontStyle.Bold)
+            };
+            lstDecizii = new ListBox { Location = new Point(10, 237), Size = new Size(195, 115) };
+            btnDecizieSus = new Button { Location = new Point(210, 237), Size = new Size(36, 55), Text = "▲" };
+            btnDecizieJos = new Button { Location = new Point(210, 295), Size = new Size(36, 57), Text = "▼" };
+            btnAdaugaDecizie = new Button { Location = new Point(10, 361), Size = new Size(115, 24), Text = "➕ Adaugă Opțiune" };
+            btnStergeDecizie = new Button { Location = new Point(130, 361), Size = new Size(115, 24), Text = "❌ Șterge Opțiune" };
+
+            lstDecizii.SelectedIndexChanged += lstDecizii_SelectedIndexChanged;
+            btnAdaugaDecizie.Click += btnAdaugaDecizie_Click;
+            btnStergeDecizie.Click += btnStergeDecizie_Click;
+            btnDecizieSus.Click += btnDecizieSus_Click;
+            btnDecizieJos.Click += btnDecizieJos_Click;
+
+            int rx = 262;
+            lblDecizieTextTitlu = new Label { Location = new Point(rx, 240), Size = new Size(95, 20), Text = "Text opțiune:" };
+            txtDecizieText = new TextBox { Location = new Point(rx + 100, 237), Size = new Size(440, 20) };
+            lblDecizieDestinatieTitlu = new Label { Location = new Point(rx, 268), Size = new Size(95, 20), Text = "Sari la bloc ID:" };
+            txtDecizieDestinatie = new TextBox { Location = new Point(rx + 100, 265), Size = new Size(440, 20) };
+
+            lblUnlocksIdee = new Label { Location = new Point(rx, 295), Size = new Size(95, 20), Text = "Deblochează:" };
+            cmbUnlocksIdee = new ComboBox { Location = new Point(rx + 100, 292), Size = new Size(250, 22), DropDownStyle = ComboBoxStyle.DropDownList };
+
+            txtDecizieText.TextChanged += txtDecizieText_TextChanged;
+            txtDecizieDestinatie.TextChanged += txtDecizieDestinatie_TextChanged;
+            cmbUnlocksIdee.SelectedIndexChanged += cmbUnlocksIdee_SelectedIndexChanged;
+
+            var lblCond = new Label
+            {
+                Location = new Point(rx, 325),
+                Size = new Size(95, 20),
+                Text = "Condiție:",
+                Font = new Font("Segoe UI", 9, FontStyle.Bold)
+            };
+            cmbCondTip = new ComboBox { Location = new Point(rx + 100, 322), Size = new Size(160, 22), DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbCondTip.Items.AddRange(new object[] { "Fără condiție", "Comparație simplă", "AND (mai multe)", "OR (mai multe)" });
+            cmbCondTip.SelectedIndex = 0;
+            cmbCondTip.SelectedIndexChanged += cmbCondTip_SelectedIndexChanged;
+
+            lblCondProp = new Label { Location = new Point(rx, 352), Size = new Size(55, 20), Text = "Proprietate:", Visible = false };
+            cmbCondProp = new ComboBox { Location = new Point(rx + 60, 349), Size = new Size(140, 22), DropDownStyle = ComboBoxStyle.DropDownList, Visible = false };
+            lblCondOp = new Label { Location = new Point(rx + 207, 352), Size = new Size(22, 20), Text = "Op:", Visible = false };
+            cmbCondOp = new ComboBox { Location = new Point(rx + 233, 349), Size = new Size(70, 22), DropDownStyle = ComboBoxStyle.DropDownList, Visible = false };
+            cmbCondOp.Items.AddRange(new object[] { "==", "!=", ">", ">=", "<", "<=" });
+            lblCondVal = new Label { Location = new Point(rx + 310, 352), Size = new Size(45, 20), Text = "Valoare:", Visible = false };
+            numCondVal = new NumericUpDown { Location = new Point(rx + 358, 349), Size = new Size(70, 22), Minimum = -200, Maximum = 200, Visible = false };
+
+            cmbCondProp.SelectedIndexChanged += cmbCondProp_SelectedIndexChanged;
+            cmbCondOp.SelectedIndexChanged += cmbCondOp_SelectedIndexChanged;
+            numCondVal.ValueChanged += numCondVal_ValueChanged;
+
+            lblCondCopiiTitlu = new Label { Location = new Point(rx, 352), Size = new Size(350, 18), Text = "Condiții (fiecare este o comparație):", Visible = false };
+            lstCondCopii = new ListBox { Location = new Point(rx, 372), Size = new Size(350, 80), Visible = false };
+            btnAdaugaCondCopil = new Button { Location = new Point(rx + 357, 372), Size = new Size(80, 38), Text = "➕ Add", Visible = false };
+            btnStergeCondCopil = new Button { Location = new Point(rx + 357, 413), Size = new Size(80, 39), Text = "❌ Del", Visible = false };
+
+            lblCondCopilProp = new Label { Location = new Point(rx, 460), Size = new Size(55, 20), Text = "Proprietate:", Visible = false };
+            cmbCondCopilProp = new ComboBox { Location = new Point(rx + 60, 457), Size = new Size(140, 22), DropDownStyle = ComboBoxStyle.DropDownList, Visible = false };
+            lblCondCopilOp = new Label { Location = new Point(rx + 207, 460), Size = new Size(22, 20), Text = "Op:", Visible = false };
+            cmbCondCopilOp = new ComboBox { Location = new Point(rx + 233, 457), Size = new Size(70, 22), DropDownStyle = ComboBoxStyle.DropDownList, Visible = false };
+            cmbCondCopilOp.Items.AddRange(new object[] { "==", "!=", ">", ">=", "<", "<=" });
+            lblCondCopilVal = new Label { Location = new Point(rx + 310, 460), Size = new Size(45, 20), Text = "Valoare:", Visible = false };
+            numCondCopilVal = new NumericUpDown { Location = new Point(rx + 358, 457), Size = new Size(70, 22), Minimum = -200, Maximum = 200, Visible = false };
+
+            lstCondCopii.SelectedIndexChanged += lstCondCopii_SelectedIndexChanged;
+            btnAdaugaCondCopil.Click += btnAdaugaCondCopil_Click;
+            btnStergeCondCopil.Click += btnStergeCondCopil_Click;
+            cmbCondCopilProp.SelectedIndexChanged += cmbCondCopilProp_SelectedIndexChanged;
+            cmbCondCopilOp.SelectedIndexChanged += cmbCondCopilOp_SelectedIndexChanged;
+            numCondCopilVal.ValueChanged += numCondCopilVal_ValueChanged;
+
+            lblDecizieEfecteTitlu = new Label { Location = new Point(rx, 492), Size = new Size(300, 15), Text = "Efecte (JSON):" };
+            txtDecizieEfecte = new TextBox
+            {
+                Location = new Point(rx, 510),
+                Size = new Size(540, 165),
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical,
+                Font = new Font("Consolas", 9)
+            };
+            txtDecizieEfecte.TextChanged += txtDecizieEfecte_TextChanged;
+
+            panelEditareBloc.Controls.Add(lblBlocTitlu);
+            panelEditareBloc.Controls.Add(lblBlockIdTitlu);
+            panelEditareBloc.Controls.Add(txtBlockId);
+            panelEditareBloc.Controls.Add(lblBlockTypeTitlu);
+            panelEditareBloc.Controls.Add(cmbBlockType);
+            panelEditareBloc.Controls.Add(lblNextBlockTitlu);
+            panelEditareBloc.Controls.Add(txtNextBlock);
+            panelEditareBloc.Controls.Add(btnStergeBloc);
+            panelEditareBloc.Controls.Add(lblBlockTextTitlu);
+            panelEditareBloc.Controls.Add(txtBlockText);
+            panelEditareBloc.Controls.Add(lblDecizii);
+            panelEditareBloc.Controls.Add(lstDecizii);
+            panelEditareBloc.Controls.Add(btnDecizieSus);
+            panelEditareBloc.Controls.Add(btnDecizieJos);
+            panelEditareBloc.Controls.Add(btnAdaugaDecizie);
+            panelEditareBloc.Controls.Add(btnStergeDecizie);
+            panelEditareBloc.Controls.Add(lblDecizieTextTitlu);
+            panelEditareBloc.Controls.Add(txtDecizieText);
+            panelEditareBloc.Controls.Add(lblDecizieDestinatieTitlu);
+            panelEditareBloc.Controls.Add(txtDecizieDestinatie);
+            panelEditareBloc.Controls.Add(lblUnlocksIdee);
+            panelEditareBloc.Controls.Add(cmbUnlocksIdee);
+            panelEditareBloc.Controls.Add(lblCond);
+            panelEditareBloc.Controls.Add(cmbCondTip);
+            panelEditareBloc.Controls.Add(lblCondProp);
+            panelEditareBloc.Controls.Add(cmbCondProp);
+            panelEditareBloc.Controls.Add(lblCondOp);
+            panelEditareBloc.Controls.Add(cmbCondOp);
+            panelEditareBloc.Controls.Add(lblCondVal);
+            panelEditareBloc.Controls.Add(numCondVal);
+            panelEditareBloc.Controls.Add(lblCondCopiiTitlu);
+            panelEditareBloc.Controls.Add(lstCondCopii);
+            panelEditareBloc.Controls.Add(btnAdaugaCondCopil);
+            panelEditareBloc.Controls.Add(btnStergeCondCopil);
+            panelEditareBloc.Controls.Add(lblCondCopilProp);
+            panelEditareBloc.Controls.Add(cmbCondCopilProp);
+            panelEditareBloc.Controls.Add(lblCondCopilOp);
+            panelEditareBloc.Controls.Add(cmbCondCopilOp);
+            panelEditareBloc.Controls.Add(lblCondCopilVal);
+            panelEditareBloc.Controls.Add(numCondCopilVal);
+            panelEditareBloc.Controls.Add(lblDecizieEfecteTitlu);
+            panelEditareBloc.Controls.Add(txtDecizieEfecte);
+
+            // ── Panel editare IDEE ──
+            panelEditareIdee = new Panel { Location = new Point(248, 55), Size = new Size(810, 690), BorderStyle = BorderStyle.FixedSingle };
+
+            var lblIdeeTitlu = new Label
+            {
+                Location = new Point(10, 10),
+                Size = new Size(400, 20),
+                Text = "💡 EDITARE IDEE",
+                Font = new Font("Arial", 10, FontStyle.Bold)
+            };
+            lblIdeeIdTitlu = new Label { Location = new Point(10, 43), Size = new Size(55, 20), Text = "ID Idee:" };
+            txtIdeeId = new TextBox { Location = new Point(70, 40), Size = new Size(250, 20) };
+            lblIdeeNumeTitlu = new Label { Location = new Point(10, 73), Size = new Size(50, 20), Text = "Nume:" };
+            txtIdeeNume = new TextBox { Location = new Point(70, 70), Size = new Size(250, 20) };
+            lblNiveluriTitlu = new Label
+            {
+                Location = new Point(10, 105),
+                Size = new Size(300, 20),
+                Text = "🔬 Nivele Research:",
+                Font = new Font("Arial", 9, FontStyle.Bold)
+            };
+            lstNivele = new ListBox { Location = new Point(10, 127), Size = new Size(220, 180) };
+            btnNivelSus = new Button { Location = new Point(236, 127), Size = new Size(36, 88), Text = "▲" };
+            btnNivelJos = new Button { Location = new Point(236, 218), Size = new Size(36, 89), Text = "▼" };
+            btnAdaugaNivel = new Button { Location = new Point(10, 315), Size = new Size(110, 25), Text = "➕ Nivel Nou" };
+            btnStergeNivel = new Button { Location = new Point(126, 315), Size = new Size(110, 25), Text = "❌ Șterge Nivel" };
+
+            lblNivelNrTitlu = new Label { Location = new Point(290, 110), Size = new Size(90, 20), Text = "Numar nivel:" };
+            numNivelNr = new NumericUpDown { Location = new Point(385, 107), Size = new Size(60, 22), Minimum = 1, Maximum = 99 };
+            lblNivelDescTitlu = new Label { Location = new Point(290, 140), Size = new Size(90, 20), Text = "Descriere:" };
+            txtNivelDesc = new TextBox { Location = new Point(385, 137), Size = new Size(410, 20) };
+            lblNivelInnTitlu = new Label { Location = new Point(290, 170), Size = new Size(115, 20), Text = "Inovație adăugată:" };
+            numNivelInn = new NumericUpDown { Location = new Point(415, 167), Size = new Size(70, 22), Minimum = -100, Maximum = 100 };
+            lblNivelStresTitlu = new Label { Location = new Point(290, 200), Size = new Size(115, 20), Text = "Cost Stres:" };
+            numNivelStres = new NumericUpDown { Location = new Point(415, 197), Size = new Size(70, 22), Minimum = -100, Maximum = 100 };
+            lblNivelProgTitlu = new Label { Location = new Point(290, 230), Size = new Size(115, 20), Text = "Progress adăugat:" };
+            numNivelProg = new NumericUpDown { Location = new Point(415, 227), Size = new Size(70, 22), Minimum = -100, Maximum = 100 };
+
+            txtIdeeId.TextChanged += txtIdeeId_TextChanged;
+            txtIdeeNume.TextChanged += txtIdeeNume_TextChanged;
+            lstNivele.SelectedIndexChanged += lstNivele_SelectedIndexChanged;
+            btnAdaugaNivel.Click += btnAdaugaNivel_Click;
+            btnStergeNivel.Click += btnStergeNivel_Click;
+            btnNivelSus.Click += btnNivelSus_Click;
+            btnNivelJos.Click += btnNivelJos_Click;
+            numNivelNr.Value = 1;
+            numNivelNr.ValueChanged += numNivelNr_ValueChanged;
+            txtNivelDesc.TextChanged += txtNivelDesc_TextChanged;
+            numNivelInn.ValueChanged += numNivelInn_ValueChanged;
+            numNivelStres.ValueChanged += numNivelStres_ValueChanged;
+            numNivelProg.ValueChanged += numNivelProg_ValueChanged;
+
+            panelEditareIdee.Controls.Add(lblIdeeTitlu);
+            panelEditareIdee.Controls.Add(lblIdeeIdTitlu);
+            panelEditareIdee.Controls.Add(txtIdeeId);
+            panelEditareIdee.Controls.Add(lblIdeeNumeTitlu);
+            panelEditareIdee.Controls.Add(txtIdeeNume);
+            panelEditareIdee.Controls.Add(lblNiveluriTitlu);
+            panelEditareIdee.Controls.Add(lstNivele);
+            panelEditareIdee.Controls.Add(btnNivelSus);
+            panelEditareIdee.Controls.Add(btnNivelJos);
+            panelEditareIdee.Controls.Add(btnAdaugaNivel);
+            panelEditareIdee.Controls.Add(btnStergeNivel);
+            panelEditareIdee.Controls.Add(lblNivelNrTitlu);
+            panelEditareIdee.Controls.Add(numNivelNr);
+            panelEditareIdee.Controls.Add(lblNivelDescTitlu);
+            panelEditareIdee.Controls.Add(txtNivelDesc);
+            panelEditareIdee.Controls.Add(lblNivelInnTitlu);
+            panelEditareIdee.Controls.Add(numNivelInn);
+            panelEditareIdee.Controls.Add(lblNivelStresTitlu);
+            panelEditareIdee.Controls.Add(numNivelStres);
+            panelEditareIdee.Controls.Add(lblNivelProgTitlu);
+            panelEditareIdee.Controls.Add(numNivelProg);
+
+            // ── Form ──
             this.SuspendLayout();
+            this.ClientSize = new Size(1070, 760);
+            this.Text = "Story Editor";
 
-            // btnCreazaNoua
-            this.btnCreazaNoua.Location = new System.Drawing.Point(12, 12);
-            this.btnCreazaNoua.Name = "btnCreazaNoua";
-            this.btnCreazaNoua.Size = new System.Drawing.Size(130, 30);
-            this.btnCreazaNoua.Text = "➕ Poveste Nouă";
-            this.btnCreazaNoua.UseVisualStyleBackColor = true;
-            this.btnCreazaNoua.Click += new System.EventHandler(this.btnCreazaNoua_Click);
+            this.Controls.Add(btnCreazaNoua);
+            this.Controls.Add(btnIncarcaExistenta);
+            this.Controls.Add(btnSalveaza);
+            this.Controls.Add(lblTitluPoveste);
+            this.Controls.Add(txtTitluPoveste);
+            this.Controls.Add(lblStatusuriTitlu);
+            this.Controls.Add(lstStatusuri);
+            this.Controls.Add(btnStatusSus);
+            this.Controls.Add(btnStatusJos);
+            this.Controls.Add(txtStatusNume);
+            this.Controls.Add(btnAdaugaStatus);
+            this.Controls.Add(btnStergeStatus);
+            this.Controls.Add(lblStructuraTitlu);
+            this.Controls.Add(treeViewStructura);
+            this.Controls.Add(btnBlocSus);
+            this.Controls.Add(btnBlocJos);
+            this.Controls.Add(btnAdaugaZi);
+            this.Controls.Add(btnStergeZi);
+            this.Controls.Add(btnAdaugaBloc);
+            this.Controls.Add(btnAdaugaIdee);
+            this.Controls.Add(btnStergeIdee);
+            this.Controls.Add(panelEditareBloc);
+            this.Controls.Add(panelEditareIdee);
 
-            // btnIncarcaExistenta
-            this.btnIncarcaExistenta.Location = new System.Drawing.Point(148, 12);
-            this.btnIncarcaExistenta.Name = "btnIncarcaExistenta";
-            this.btnIncarcaExistenta.Size = new System.Drawing.Size(130, 30);
-            this.btnIncarcaExistenta.Text = "📂 Deschide JSON";
-            this.btnIncarcaExistenta.UseVisualStyleBackColor = true;
-            this.btnIncarcaExistenta.Click += new System.EventHandler(this.btnIncarcaExistenta_Click);
-
-            // btnSalveaza
-            this.btnSalveaza.Location = new System.Drawing.Point(908, 12);
-            this.btnSalveaza.Name = "btnSalveaza";
-            this.btnSalveaza.Size = new System.Drawing.Size(130, 30);
-            this.btnSalveaza.Text = "💾 Salvează";
-            this.btnSalveaza.UseVisualStyleBackColor = true;
-            this.btnSalveaza.Click += new System.EventHandler(this.btnSalveaza_Click);
-
-            // lblTitluPoveste
-            this.lblTitluPoveste.Location = new System.Drawing.Point(300, 17);
-            this.lblTitluPoveste.Name = "lblTitluPoveste";
-            this.lblTitluPoveste.Size = new System.Drawing.Size(80, 20);
-            this.lblTitluPoveste.Text = "Titlu Proiect:";
-
-            // txtTitluPoveste
-            this.txtTitluPoveste.Location = new System.Drawing.Point(380, 14);
-            this.txtTitluPoveste.Name = "txtTitluPoveste";
-            this.txtTitluPoveste.Size = new System.Drawing.Size(300, 20);
-
-            // lblStatusuriTitlu
-            this.lblStatusuriTitlu.Location = new System.Drawing.Point(12, 55);
-            this.lblStatusuriTitlu.Name = "lblStatusuriTitlu";
-            this.lblStatusuriTitlu.Size = new System.Drawing.Size(266, 18);
-            this.lblStatusuriTitlu.Text = "📊 Statusuri Globale (Properties):";
-
-            // lstStatusuri (Lățime redusă ușor pentru a face loc butoanelor)
-            this.lstStatusuri.Location = new System.Drawing.Point(12, 75);
-            this.lstStatusuri.Name = "lstStatusuri";
-            this.lstStatusuri.Size = new System.Drawing.Size(220, 82);
-
-            // btnStatusSus
-            this.btnStatusSus.Location = new System.Drawing.Point(238, 75);
-            this.btnStatusSus.Name = "btnStatusSus";
-            this.btnStatusSus.Size = new System.Drawing.Size(40, 40);
-            this.btnStatusSus.Text = "▲";
-            this.btnStatusSus.UseVisualStyleBackColor = true;
-            this.btnStatusSus.Click += new System.EventHandler(this.btnStatusSus_Click);
-
-            // btnStatusJos
-            this.btnStatusJos.Location = new System.Drawing.Point(238, 117);
-            this.btnStatusJos.Name = "btnStatusJos";
-            this.btnStatusJos.Size = new System.Drawing.Size(40, 40);
-            this.btnStatusJos.Text = "▼";
-            this.btnStatusJos.UseVisualStyleBackColor = true;
-            this.btnStatusJos.Click += new System.EventHandler(this.btnStatusJos_Click);
-
-            // txtStatusNume
-            this.txtStatusNume.Location = new System.Drawing.Point(12, 162);
-            this.txtStatusNume.Name = "txtStatusNume";
-            this.txtStatusNume.Size = new System.Drawing.Size(136, 20);
-
-            // btnAdaugaStatus
-            this.btnAdaugaStatus.Location = new System.Drawing.Point(154, 160);
-            this.btnAdaugaStatus.Name = "btnAdaugaStatus";
-            this.btnAdaugaStatus.Size = new System.Drawing.Size(60, 23);
-            this.btnAdaugaStatus.Text = "➕ Add";
-            this.btnAdaugaStatus.UseVisualStyleBackColor = true;
-            this.btnAdaugaStatus.Click += new System.EventHandler(this.btnAdaugaStatus_Click);
-
-            // btnStergeStatus
-            this.btnStergeStatus.Location = new System.Drawing.Point(218, 160);
-            this.btnStergeStatus.Name = "btnStergeStatus";
-            this.btnStergeStatus.Size = new System.Drawing.Size(60, 23);
-            this.btnStergeStatus.Text = "❌ Del";
-            this.btnStergeStatus.UseVisualStyleBackColor = true;
-            this.btnStergeStatus.Click += new System.EventHandler(this.btnStergeStatus_Click);
-
-            // lblStructuraTitlu
-            this.lblStructuraTitlu.Location = new System.Drawing.Point(12, 195);
-            this.lblStructuraTitlu.Name = "lblStructuraTitlu";
-            this.lblStructuraTitlu.Size = new System.Drawing.Size(266, 18);
-            this.lblStructuraTitlu.Text = "🌲 Structură Zile & Blocuri:";
-
-            // treeViewStructura (Lățime redusă pentru loc butoane)
-            this.treeViewStructura.Location = new System.Drawing.Point(12, 215);
-            this.treeViewStructura.Name = "treeViewStructura";
-            this.treeViewStructura.Size = new System.Drawing.Size(220, 350);
-            this.treeViewStructura.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeViewStructura_AfterSelect);
-
-            // btnBlocSus
-            this.btnBlocSus.Location = new System.Drawing.Point(238, 215);
-            this.btnBlocSus.Name = "btnBlocSus";
-            this.btnBlocSus.Size = new System.Drawing.Size(40, 35);
-            this.btnBlocSus.Text = "▲";
-            this.btnBlocSus.UseVisualStyleBackColor = true;
-            this.btnBlocSus.Click += new System.EventHandler(this.btnBlocSus_Click);
-
-            // btnBlocJos
-            this.btnBlocJos.Location = new System.Drawing.Point(238, 255);
-            this.btnBlocJos.Name = "btnBlocJos";
-            this.btnBlocJos.Size = new System.Drawing.Size(40, 35);
-            this.btnBlocJos.Text = "▼";
-            this.btnBlocJos.UseVisualStyleBackColor = true;
-            this.btnBlocJos.Click += new System.EventHandler(this.btnBlocJos_Click);
-
-            // btnAdaugaZi
-            this.btnAdaugaZi.Location = new System.Drawing.Point(12, 575);
-            this.btnAdaugaZi.Name = "btnAdaugaZi";
-            this.btnAdaugaZi.Size = new System.Drawing.Size(130, 30);
-            this.btnAdaugaZi.Text = "📅 Adaugă Zi";
-            this.btnAdaugaZi.UseVisualStyleBackColor = true;
-            this.btnAdaugaZi.Click += new System.EventHandler(this.btnAdaugaZi_Click);
-
-            // btnAdaugaBloc
-            this.btnAdaugaBloc.Location = new System.Drawing.Point(148, 575);
-            this.btnAdaugaBloc.Name = "btnAdaugaBloc";
-            this.btnAdaugaBloc.Size = new System.Drawing.Size(130, 30);
-            this.btnAdaugaBloc.Text = "📄 Adaugă Bloc";
-            this.btnAdaugaBloc.UseVisualStyleBackColor = true;
-            this.btnAdaugaBloc.Click += new System.EventHandler(this.btnAdaugaBloc_Click);
-
-            // panelEditareBloc
-            this.panelEditareBloc.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.panelEditareBloc.Controls.Add(this.lblEditareBlocTitlu);
-            this.panelEditareBloc.Controls.Add(this.lblBlockIdTitlu);
-            this.panelEditareBloc.Controls.Add(this.txtBlockId);
-            this.panelEditareBloc.Controls.Add(this.lblBlockTextTitlu);
-            this.panelEditareBloc.Controls.Add(this.txtBlockText);
-            this.panelEditareBloc.Controls.Add(this.lblDeciziiTitlu);
-            this.panelEditareBloc.Controls.Add(this.lstDecizii);
-            this.panelEditareBloc.Controls.Add(this.btnDecizieSus);
-            this.panelEditareBloc.Controls.Add(this.btnDecizieJos);
-            this.panelEditareBloc.Controls.Add(this.btnAdaugaDecizie);
-            this.panelEditareBloc.Controls.Add(this.btnStergeDecizie);
-            this.panelEditareBloc.Controls.Add(this.lblDecizieTextTitlu);
-            this.panelEditareBloc.Controls.Add(this.txtDecizieText);
-            this.panelEditareBloc.Controls.Add(this.lblDecizieDestinatieTitlu);
-            this.panelEditareBloc.Controls.Add(this.txtDecizieDestinatie);
-            this.panelEditareBloc.Controls.Add(this.lblDecizieEfecteTitlu);
-            this.panelEditareBloc.Controls.Add(this.txtDecizieEfecte);
-            this.panelEditareBloc.Location = new System.Drawing.Point(300, 55);
-            this.panelEditareBloc.Name = "panelEditareBloc";
-            this.panelEditareBloc.Size = new System.Drawing.Size(738, 550);
-
-            // lblEditareBlocTitlu
-            this.lblEditareBlocTitlu.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.lblEditareBlocTitlu.Location = new System.Drawing.Point(10, 10);
-            this.lblEditareBlocTitlu.Name = "lblEditareBlocTitlu";
-            this.lblEditareBlocTitlu.Size = new System.Drawing.Size(300, 20);
-            this.lblEditareBlocTitlu.Text = "📝 EDITARE BLOC SELECTAT";
-
-            // lblBlockIdTitlu
-            this.lblBlockIdTitlu.Location = new System.Drawing.Point(10, 43);
-            this.lblBlockIdTitlu.Name = "lblBlockIdTitlu";
-            this.lblBlockIdTitlu.Size = new System.Drawing.Size(60, 20);
-            this.lblBlockIdTitlu.Text = "ID Bloc:";
-
-            // txtBlockId
-            this.txtBlockId.Location = new System.Drawing.Point(80, 40);
-            this.txtBlockId.Name = "txtBlockId";
-            this.txtBlockId.Size = new System.Drawing.Size(220, 20);
-            this.txtBlockId.TextChanged += new System.EventHandler(this.txtBlockId_TextChanged);
-
-            // lblBlockTextTitlu
-            this.lblBlockTextTitlu.Location = new System.Drawing.Point(10, 75);
-            this.lblBlockTextTitlu.Name = "lblBlockTextTitlu";
-            this.lblBlockTextTitlu.Size = new System.Drawing.Size(300, 15);
-            this.lblBlockTextTitlu.Text = "Text poveste:";
-
-            // txtBlockText
-            this.txtBlockText.Location = new System.Drawing.Point(10, 95);
-            this.txtBlockText.Multiline = true;
-            this.txtBlockText.Name = "txtBlockText";
-            this.txtBlockText.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtBlockText.Size = new System.Drawing.Size(715, 120);
-            this.txtBlockText.TextChanged += new System.EventHandler(this.txtBlockText_TextChanged);
-
-            // lblDeciziiTitlu
-            this.lblDeciziiTitlu.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lblDeciziiTitlu.Location = new System.Drawing.Point(10, 230);
-            this.lblDeciziiTitlu.Name = "lblDeciziiTitlu";
-            this.lblDeciziiTitlu.Size = new System.Drawing.Size(300, 20);
-            this.lblDeciziiTitlu.Text = "🔘 Opțiuni / Decizii Jucător:";
-
-            // lstDecizii (Lățime ajustată)
-            this.lstDecizii.Location = new System.Drawing.Point(10, 255);
-            this.lstDecizii.Name = "lstDecizii";
-            this.lstDecizii.Size = new System.Drawing.Size(200, 108);
-            this.lstDecizii.SelectedIndexChanged += new System.EventHandler(this.lstDecizii_SelectedIndexChanged);
-
-            // btnDecizieSus
-            this.btnDecizieSus.Location = new System.Drawing.Point(215, 255);
-            this.btnDecizieSus.Name = "btnDecizieSus";
-            this.btnDecizieSus.Size = new System.Drawing.Size(45, 50);
-            this.btnDecizieSus.Text = "▲";
-            this.btnDecizieSus.UseVisualStyleBackColor = true;
-            this.btnDecizieSus.Click += new System.EventHandler(this.btnDecizieSus_Click);
-
-            // btnDecizieJos
-            this.btnDecizieJos.Location = new System.Drawing.Point(215, 310);
-            this.btnDecizieJos.Name = "btnDecizieJos";
-            this.btnDecizieJos.Size = new System.Drawing.Size(45, 53);
-            this.btnDecizieJos.Text = "▼";
-            this.btnDecizieJos.UseVisualStyleBackColor = true;
-            this.btnDecizieJos.Click += new System.EventHandler(this.btnDecizieJos_Click);
-
-            // btnAdaugaDecizie
-            this.btnAdaugaDecizie.Location = new System.Drawing.Point(10, 372);
-            this.btnAdaugaDecizie.Name = "btnAdaugaDecizie";
-            this.btnAdaugaDecizie.Size = new System.Drawing.Size(120, 25);
-            this.btnAdaugaDecizie.Text = "➕ Adaugă Opțiune";
-            this.btnAdaugaDecizie.UseVisualStyleBackColor = true;
-            this.btnAdaugaDecizie.Click += new System.EventHandler(this.btnAdaugaDecizie_Click);
-
-            // btnStergeDecizie
-            this.btnStergeDecizie.Location = new System.Drawing.Point(140, 372);
-            this.btnStergeDecizie.Name = "btnStergeDecizie";
-            this.btnStergeDecizie.Size = new System.Drawing.Size(120, 25);
-            this.btnStergeDecizie.Text = "❌ Șterge Opțiune";
-            this.btnStergeDecizie.UseVisualStyleBackColor = true;
-            this.btnStergeDecizie.Click += new System.EventHandler(this.btnStergeDecizie_Click);
-
-            // lblDecizieTextTitlu
-            this.lblDecizieTextTitlu.Location = new System.Drawing.Point(280, 258);
-            this.lblDecizieTextTitlu.Name = "lblDecizieTextTitlu";
-            this.lblDecizieTextTitlu.Size = new System.Drawing.Size(90, 20);
-            this.lblDecizieTextTitlu.Text = "Text Opțiune:";
-
-            // txtDecizieText
-            this.txtDecizieText.Location = new System.Drawing.Point(375, 255);
-            this.txtDecizieText.Name = "txtDecizieText";
-            this.txtDecizieText.Size = new System.Drawing.Size(350, 20);
-            this.txtDecizieText.TextChanged += new System.EventHandler(this.txtDecizieText_TextChanged);
-
-            // lblDecizieDestinatieTitlu
-            this.lblDecizieDestinatieTitlu.Location = new System.Drawing.Point(280, 288);
-            this.lblDecizieDestinatieTitlu.Name = "lblDecizieDestinatieTitlu";
-            this.lblDecizieDestinatieTitlu.Size = new System.Drawing.Size(95, 20);
-            this.lblDecizieDestinatieTitlu.Text = "Sari la Bloc (ID):";
-
-            // txtDecizieDestinatie
-            this.txtDecizieDestinatie.Location = new System.Drawing.Point(375, 285);
-            this.txtDecizieDestinatie.Name = "txtDecizieDestinatie";
-            this.txtDecizieDestinatie.Size = new System.Drawing.Size(350, 20);
-            this.txtDecizieDestinatie.TextChanged += new System.EventHandler(this.txtDecizieDestinatie_TextChanged);
-
-            // lblDecizieEfecteTitlu
-            this.lblDecizieEfecteTitlu.Location = new System.Drawing.Point(280, 320);
-            this.lblDecizieEfecteTitlu.Name = "lblDecizieEfecteTitlu";
-            this.lblDecizieEfecteTitlu.Size = new System.Drawing.Size(350, 15);
-            this.lblDecizieEfecteTitlu.Text = "Efecte Decizie (Stări, Idei, Research ca text JSON):";
-
-            // txtDecizieEfecte
-            this.txtDecizieEfecte.Font = new System.Drawing.Font("Consolas", 9F);
-            this.txtDecizieEfecte.Location = new System.Drawing.Point(280, 340);
-            this.txtDecizieEfecte.Multiline = true;
-            this.txtDecizieEfecte.Name = "txtDecizieEfecte";
-            this.txtDecizieEfecte.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtDecizieEfecte.Size = new System.Drawing.Size(445, 180);
-            this.txtDecizieEfecte.TextChanged += new System.EventHandler(this.txtDecizieEfecte_TextChanged);
-
-            // FormEditor Configuration
-            this.ClientSize = new System.Drawing.Size(1050, 620);
-            this.Controls.Add(this.btnCreazaNoua);
-            this.Controls.Add(this.btnIncarcaExistenta);
-            this.Controls.Add(this.btnSalveaza);
-            this.Controls.Add(this.lblTitluPoveste);
-            this.Controls.Add(this.txtTitluPoveste);
-            this.Controls.Add(this.lblStatusuriTitlu);
-            this.Controls.Add(this.lstStatusuri);
-            this.Controls.Add(this.btnStatusSus);
-            this.Controls.Add(this.btnStatusJos);
-            this.Controls.Add(this.txtStatusNume);
-            this.Controls.Add(this.btnAdaugaStatus);
-            this.Controls.Add(this.btnStergeStatus);
-            this.Controls.Add(this.lblStructuraTitlu);
-            this.Controls.Add(this.treeViewStructura);
-            this.Controls.Add(this.btnBlocSus);
-            this.Controls.Add(this.btnBlocJos);
-            this.Controls.Add(this.btnAdaugaZi);
-            this.Controls.Add(this.btnAdaugaBloc);
-            this.Controls.Add(this.panelEditareBloc);
-            this.Name = "FormEditor";
-            this.Text = "Advanced Story Layout Editor - Live Engine";
-            this.panelEditareBloc.ResumeLayout(false);
-            this.panelEditareBloc.PerformLayout();
             this.ResumeLayout(false);
-            this.PerformLayout();
+        }
+
+        private void PopuleazaComboProprietati(ComboBox cmb)
+        {
+            string sel = cmb.SelectedItem?.ToString();
+            cmb.Items.Clear();
+            foreach (var p in _povesteCurenta?.Properties ?? new List<PropertyJsonDefinition>())
+                cmb.Items.Add(p.Key);
+            if (!string.IsNullOrEmpty(sel)) SelecteazaCombo(cmb, sel);
+            else if (cmb.Items.Count > 0) cmb.SelectedIndex = 0;
         }
     }
 }

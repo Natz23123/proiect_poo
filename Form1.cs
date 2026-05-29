@@ -68,8 +68,7 @@ namespace proiect_poo
             panelHUD.Controls.Clear();
 
             var statusuriDeAfisat = _gameState.ToateStatusurile
-                .Where(s => s.VisibleInHud)
-                .OrderBy(s => s.HudOrder);
+                .Where(s => s.VisibleInHud);
 
             int index = 0;
             foreach (var status in statusuriDeAfisat)
