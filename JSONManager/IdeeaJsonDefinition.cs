@@ -12,10 +12,14 @@ namespace proiect_poo
 
     public class ResearchLevelJsonDefinition
     {
-        [JsonPropertyName("level")] public int Level { get; set; }
-        [JsonPropertyName("description")] public string Description { get; set; }
-        [JsonPropertyName("innovationAdded")] public int InnovationAdded { get; set; }
-        [JsonPropertyName("stressCost")] public int StressCost { get; set; }
-        [JsonPropertyName("progressAdded")] public int ProgressAdded { get; set; }
+        [JsonPropertyName("level")]
+        public int Level { get; set; }
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; }
+
+        [JsonPropertyName("effects")]
+        public List<EffectJsonDefinition> Effects { get; set; } = new List<EffectJsonDefinition>();
     }
+
 }

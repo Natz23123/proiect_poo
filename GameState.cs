@@ -30,7 +30,7 @@ namespace proiect_poo
             ToateStatusurile.Clear();
             IdeaResearchLevels.Clear();
             IdeaMaxAllowedLevels.Clear();
-            IdeaImplementationLevels.Clear(); // MODIFICARE: Resetăm și lista de implementări la început de joc
+            IdeaImplementationLevels.Clear(); // Resetăm și lista de implementări la început de joc
             _deciziiLuateInBlocCurent = 0;
 
             if (poveste.Properties != null)
@@ -63,8 +63,14 @@ namespace proiect_poo
 
             IdeaResearchLevels[ideaId] = nextLevelDef.Level;
 
-            ModificaStatus("innovation", nextLevelDef.InnovationAdded);
-            ModificaStatus("stres", nextLevelDef.StressCost);
+            // FIX: Am înlocuit 'nivel' cu 'nextLevelDef' și 'ModificaValoareStatus' cu 'ModificaStatus'
+            if (nextLevelDef.Effects != null)
+            {
+                foreach (var efect in nextLevelDef.Effects)
+                {
+                    ModificaStatus(efect.Property, efect.Value);
+                }
+            }
 
             PostActionAdvance(decisionsRequired, nextBlock);
         }
@@ -77,17 +83,23 @@ namespace proiect_poo
             int currentLevel = IdeaResearchLevels.ContainsKey(ideaId) ? IdeaResearchLevels[ideaId] : 0;
             if (currentLevel == 0) return;
 
-            // MODIFICARE/VERIFICARE: Dacă am implementat deja acest nivel (sau unul mai mare), nu facem nimic
+            // Dacă am implementat deja acest nivel (sau unul mai mare), nu facem nimic
             if (IdeaImplementationLevels.TryGetValue(ideaId, out int implLevel) && implLevel >= currentLevel)
                 return;
 
             var levelDef = idea.ResearchLevels.FirstOrDefault(l => l.Level == currentLevel);
             if (levelDef == null) return;
 
-            ModificaStatus("progress", levelDef.ProgressAdded);
-            ModificaStatus("stres", levelDef.StressCost);
+            // FIX: Înlocuim proprietățile lipsă (ProgressAdded, StressCost) cu parcurgerea listei dinamice de efecte
+            if (levelDef.Effects != null)
+            {
+                foreach (var efect in levelDef.Effects)
+                {
+                    ModificaStatus(efect.Property, efect.Value);
+                }
+            }
 
-            // MODIFICARE: Salvăm faptul că am implementat acest nivel, ca să nu îl mai repetăm
+            // Salvăm faptul că am implementat acest nivel, ca să nu îl mai repetăm
             IdeaImplementationLevels[ideaId] = currentLevel;
 
             PostActionAdvance(decisionsRequired, nextBlock);
@@ -128,7 +140,7 @@ namespace proiect_poo
                         }
                         else
                         {
-                            // FIX: Dacă ideea nu e în dicționar, o salvăm direct cu noul nivel permis
+                            // Dacă ideea nu e în dicționar, o salvăm direct cu noul nivel permis
                             IdeaMaxAllowedLevels[efect.Property] = efect.Value;
                         }
                         continue;

@@ -233,10 +233,31 @@ namespace proiect_poo
                 var idea = _gameState.PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == ideaId);
                 if (idea == null) continue;
 
+                // Construim tooltip-ul din lista de efecte
+                string tooltipText = "Efecte:\n";
+                if (nextLvl.Effects != null && nextLvl.Effects.Count > 0)
+                {
+                    foreach (var ef in nextLvl.Effects)
+                    {
+                        if (ef.Type?.ToUpper() == "ADD")
+                        {
+                            var status = _gameState.ToateStatusurile.FirstOrDefault(s => s.Key == ef.Property);
+                            string nume = status != null ? status.Nume : ef.Property;
+                            string semn = ef.Value >= 0 ? "+" : "";
+                            tooltipText += $"{nume}: {semn}{ef.Value}\n";
+                        }
+                        // poți adăuga și alte tipuri de efecte dacă există
+                    }
+                }
+                else
+                {
+                    tooltipText = "Fără efecte.";
+                }
+
                 string capturedId = ideaId;
                 lista.Add((
                     $"{idea.Name}  —  Nivel {nextLvl.Level}: {nextLvl.Description}",
-                    $"Inovație: +{nextLvl.InnovationAdded}   Stres: +{nextLvl.StressCost}",
+                    tooltipText,
                     () =>
                     {
                         _gameState.ResearchIdea(capturedId, decisionsRequired, nextBlock);
@@ -244,7 +265,6 @@ namespace proiect_poo
                     }
                 ));
             }
-
             return lista;
         }
 
@@ -258,21 +278,38 @@ namespace proiect_poo
                 string ideaId = kv.Key;
                 int level = kv.Value;
 
-                // ACEASTA ESTE LINIA CRUCIALĂ ÎN FORM1:
-                // Dacă nivelul de implementare salvat în GameState e mai mare sau egal cu cel cercetat, îl sărim!
+                // Verificăm dacă deja a fost implementat acest nivel
                 if (_gameState.IdeaImplementationLevels.TryGetValue(ideaId, out int implLevel) && implLevel >= level)
-                {
                     continue;
-                }
 
                 var idea = _gameState.PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == ideaId);
                 var levelDef = idea?.ResearchLevels.FirstOrDefault(l => l.Level == level);
                 if (idea == null || levelDef == null) continue;
 
+                // Tooltip din efecte
+                string tooltipText = "Efecte:\n";
+                if (levelDef.Effects != null && levelDef.Effects.Count > 0)
+                {
+                    foreach (var ef in levelDef.Effects)
+                    {
+                        if (ef.Type?.ToUpper() == "ADD")
+                        {
+                            var status = _gameState.ToateStatusurile.FirstOrDefault(s => s.Key == ef.Property);
+                            string nume = status != null ? status.Nume : ef.Property;
+                            string semn = ef.Value >= 0 ? "+" : "";
+                            tooltipText += $"{nume}: {semn}{ef.Value}\n";
+                        }
+                    }
+                }
+                else
+                {
+                    tooltipText = "Fără efecte.";
+                }
+
                 string capturedId = ideaId;
                 lista.Add((
                     $"{idea.Name}  —  Research Nivel {level}",
-                    $"Progress: +{levelDef.ProgressAdded}   Stres: +{levelDef.StressCost}",
+                    tooltipText,
                     () =>
                     {
                         _gameState.ImplementIdea(capturedId, decisionsRequired, nextBlock);
@@ -280,7 +317,6 @@ namespace proiect_poo
                     }
                 ));
             }
-
             return lista;
         }
 

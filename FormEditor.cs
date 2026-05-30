@@ -9,6 +9,8 @@ namespace proiect_poo
 {
     public partial class FormEditor : Form
     {
+        private Label lblNivelDescriere;
+        private TextBox txtNivelDescriere;
         // ── State ─────────────────────────────────────────────────────────────
         private StoryJsonDefinition _povesteCurenta;
         private string _caleFichierCurent = "";
@@ -89,7 +91,16 @@ namespace proiect_poo
         private ListBox lstNivele;
         private Button btnAdaugaNivel, btnStergeNivel, btnNivelSus, btnNivelJos;
         private Label lblNivelNrTitlu, lblNivelDescTitlu, lblNivelInnTitlu, lblNivelStresTitlu, lblNivelProgTitlu;
-        private NumericUpDown numNivelNr, numNivelInn, numNivelStres, numNivelProg;
+
+        // Câmpuri editare nivel research (Dinamice)
+        
+        private NumericUpDown numNivelNr;
+        private Label lblNivelEfecteTitlu;
+        private ListBox lstNivelEfecte;
+        private Button btnAdaugaNivelEfect, btnStergeNivelEfect;
+        private ComboBox cmbNivelEfectProp;
+        private NumericUpDown numNivelEfectVal;
+
         private TextBox txtNivelDesc;
 
         // ═════════════════════════════════════════════════════════════════════
@@ -732,24 +743,32 @@ namespace proiect_poo
         private void lstNivele_SelectedIndexChanged(object sender, EventArgs e)
         {
             int idx = lstNivele.SelectedIndex;
-            if (idx < 0 || idx >= (_ideeCurenta?.ResearchLevels?.Count ?? 0))
-            { _nivelCurent = null; SetareStareEditareNivel(false); return; }
+            if (idx < 0 || _ideeCurenta?.ResearchLevels == null || idx >= _ideeCurenta.ResearchLevels.Count)
+            {
+                _nivelCurent = null;
+                SetareStareEditareNivel(false);
+                txtNivelDescriere.Text = ""; // <--- Aici cu denumirea completă
+                return;
+            }
 
             _nivelCurent = _ideeCurenta.ResearchLevels[idx];
             _seIncarcaDatele = true;
+
             numNivelNr.Value = _nivelCurent.Level;
-            txtNivelDesc.Text = _nivelCurent.Description ?? "";
-            numNivelInn.Value = _nivelCurent.InnovationAdded;
-            numNivelStres.Value = _nivelCurent.StressCost;
-            numNivelProg.Value = _nivelCurent.ProgressAdded;
+            txtNivelDescriere.Text = _nivelCurent.Description ?? ""; // <--- Aici cu denumirea completă
+
+            PopuleazaComboProprietati(cmbNivelEfectProp);
+            ActualizeazaListaNivelEfecte();
+
             _seIncarcaDatele = false;
             SetareStareEditareNivel(true);
         }
 
         private void SetareStareEditareNivel(bool a)
         {
-            numNivelNr.Enabled = txtNivelDesc.Enabled = numNivelInn.Enabled =
-            numNivelStres.Enabled = numNivelProg.Enabled = btnNivelSus.Enabled = btnNivelJos.Enabled = a;
+            numNivelNr.Enabled = txtNivelDesc.Enabled = btnNivelSus.Enabled = btnNivelJos.Enabled = a;
+            lstNivelEfecte.Enabled = btnAdaugaNivelEfect.Enabled = btnStergeNivelEfect.Enabled = a;
+            cmbNivelEfectProp.Enabled = numNivelEfectVal.Enabled = a;
         }
 
         private void btnAdaugaNivel_Click(object sender, EventArgs e)
@@ -757,7 +776,11 @@ namespace proiect_poo
             if (_ideeCurenta == null) return;
             int nou = (_ideeCurenta.ResearchLevels.Count > 0 ? _ideeCurenta.ResearchLevels.Max(n => n.Level) : 0) + 1;
             _ideeCurenta.ResearchLevels.Add(new ResearchLevelJsonDefinition
-            { Level = nou, Description = "Descriere nivel " + nou, InnovationAdded = 10, StressCost = 10, ProgressAdded = 10 });
+            {
+                Level = nou,
+                Description = "Descriere nivel " + nou,
+                Effects = new List<EffectJsonDefinition>() // listă goală de efecte
+            });
             ActualizeazaListaNivele(); ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta);
             lstNivele.SelectedIndex = lstNivele.Items.Count - 1;
         }
@@ -777,13 +800,132 @@ namespace proiect_poo
         private void numNivelNr_ValueChanged(object sender, EventArgs e)
         { if (!_seIncarcaDatele && _nivelCurent != null) { _nivelCurent.Level = (int)numNivelNr.Value; ActualizeazaListaNivele(); ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta); } }
         private void txtNivelDesc_TextChanged(object sender, EventArgs e)
-        { if (!_seIncarcaDatele && _nivelCurent != null) { _nivelCurent.Description = txtNivelDesc.Text; ActualizeazaListaNivele(); ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta); } }
-        private void numNivelInn_ValueChanged(object sender, EventArgs e)
-        { if (!_seIncarcaDatele && _nivelCurent != null) _nivelCurent.InnovationAdded = (int)numNivelInn.Value; }
-        private void numNivelStres_ValueChanged(object sender, EventArgs e)
-        { if (!_seIncarcaDatele && _nivelCurent != null) _nivelCurent.StressCost = (int)numNivelStres.Value; }
-        private void numNivelProg_ValueChanged(object sender, EventArgs e)
-        { if (!_seIncarcaDatele && _nivelCurent != null) _nivelCurent.ProgressAdded = (int)numNivelProg.Value; }
+        {
+            if (_seIncarcaDatele || _nivelCurent == null) return;
+
+            // Salvează textul în obiectul din memorie
+            _nivelCurent.Description = txtNivelDesc.Text;
+
+            // Actualizează live textul din TreeView în stânga
+            if (treeViewStructura.SelectedNode != null && treeViewStructura.SelectedNode.Tag == _nivelCurent)
+            {
+                treeViewStructura.SelectedNode.Text = $"Nivel {_nivelCurent.Level}: {Scurt(_nivelCurent.Description, 20)}";
+            }
+        }
+
+        private void ActualizeazaListaNivelEfecte()
+        {
+            // Presupunem că ListBox-ul tău pentru efectele nivelului se numește lstNivelEfecte sau similar
+            // Înlocuiește 'lstNivelEfecte' cu numele real al ListBox-ului tău de efecte pentru idei
+            lstNivelEfecte.Items.Clear();
+
+            if (_nivelCurent == null || _nivelCurent.Effects == null) return;
+
+            foreach (var ef in _nivelCurent.Effects)
+            {
+                lstNivelEfecte.Items.Add(ef);
+            }
+        }
+
+        private void lstNivelEfecte_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int idx = lstNivelEfecte.SelectedIndex;
+            if (idx < 0 || _nivelCurent?.Effects == null || idx >= _nivelCurent.Effects.Count) return;
+
+            var ef = _nivelCurent.Effects[idx];
+            _seIncarcaDatele = true;
+            SelecteazaCombo(cmbNivelEfectProp, ef.Property);
+            numNivelEfectVal.Value = ef.Value;
+            _seIncarcaDatele = false;
+        }
+
+        private void btnAdaugaNivelEfect_Click(object sender, EventArgs e)
+        {
+            if (_nivelCurent == null)
+            {
+                MessageBox.Show("Selectează mai întâi un nivel de cercetare!");
+                return;
+            }
+
+            // Citim proprietatea selectată din ComboBox-ul tău (ex: cmbNivelEfectProp)
+            string propSelectata = cmbNivelEfectProp.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(propSelectata))
+            {
+                MessageBox.Show("Selectează o proprietate din listă!");
+                return;
+            }
+
+            // Preluăm valoarea din NumericUpDown-ul corespunzător (ex: numNivelEfectVal)
+            int valoare = (int)numNivelEfectVal.Value;
+
+            // Ne asigurăm că lista de efecte nu este null
+            if (_nivelCurent.Effects == null)
+            {
+                _nivelCurent.Effects = new List<EffectJsonDefinition>();
+            }
+
+            // Creăm noul obiect conform formatului dorit
+            var nouEfect = new EffectJsonDefinition
+            {
+                Type = "ADD",
+                Property = propSelectata,
+                Value = valoare
+            };
+
+            // Îl adăugăm în lista din memorie
+            _nivelCurent.Effects.Add(nouEfect);
+
+            // Reîmprospătăm interfața vizuală
+            ActualizeazaListaNivelEfecte();
+        }
+        private void txtNivelDescriere_TextChanged(object sender, EventArgs e)
+        {
+            if (_seIncarcaDatele || _nivelCurent == null) return;
+
+            // Salvează descrierea în obiectul curent
+            _nivelCurent.Description = txtNivelDescriere.Text;
+
+            // Actualizează textul în nodul din TreeView folosind funcția Scurt originală a proiectului tău
+            if (treeViewStructura.SelectedNode != null && treeViewStructura.SelectedNode.Tag == _nivelCurent)
+            {
+                treeViewStructura.SelectedNode.Text = $"Nivel {_nivelCurent.Level}: {Scurt(_nivelCurent.Description, 20)}";
+            }
+        }
+
+        private void btnStergeNivelEfect_Click(object sender, EventArgs e)
+        {
+            if (_nivelCurent == null || lstNivelEfecte.SelectedItem == null) return;
+
+            var efSelectat = lstNivelEfecte.SelectedItem as EffectJsonDefinition;
+            if (efSelectat != null && _nivelCurent.Effects != null)
+            {
+                // Ștergem efectul din lista din memorie
+                _nivelCurent.Effects.Remove(efSelectat);
+
+                // Actualizăm ListBox-ul
+                ActualizeazaListaNivelEfecte();
+            }
+        }
+
+        private void cmbNivelEfectProp_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int idx = lstNivelEfecte.SelectedIndex;
+            if (_seIncarcaDatele || _nivelCurent == null || idx < 0 || idx >= _nivelCurent.Effects.Count) return;
+            _nivelCurent.Effects[idx].Property = cmbNivelEfectProp.SelectedItem?.ToString() ?? "";
+            _seIncarcaDatele = true;
+            ActualizeazaListaNivelEfecte();
+            _seIncarcaDatele = false;
+        }
+
+        private void numNivelEfectVal_ValueChanged(object sender, EventArgs e)
+        {
+            int idx = lstNivelEfecte.SelectedIndex;
+            if (_seIncarcaDatele || _nivelCurent == null || idx < 0 || idx >= _nivelCurent.Effects.Count) return;
+            _nivelCurent.Effects[idx].Value = (int)numNivelEfectVal.Value;
+            _seIncarcaDatele = true;
+            ActualizeazaListaNivelEfecte();
+            _seIncarcaDatele = false;
+        }
 
         // ── Utilitare ─────────────────────────────────────────────────────────
         private void ReordoneazaLista<T>(List<T> lista, ListBox lb, int dir, Action refresh)
@@ -1069,16 +1211,12 @@ namespace proiect_poo
             btnAdaugaNivel = new Button { Location = new Point(10, 315), Size = new Size(110, 25), Text = "➕ Nivel Nou" };
             btnStergeNivel = new Button { Location = new Point(126, 315), Size = new Size(110, 25), Text = "❌ Șterge Nivel" };
 
-            lblNivelNrTitlu = new Label { Location = new Point(290, 110), Size = new Size(90, 20), Text = "Numar nivel:" };
-            numNivelNr = new NumericUpDown { Location = new Point(385, 107), Size = new Size(60, 22), Minimum = 1, Maximum = 99 };
-            lblNivelDescTitlu = new Label { Location = new Point(290, 140), Size = new Size(90, 20), Text = "Descriere:" };
-            txtNivelDesc = new TextBox { Location = new Point(385, 137), Size = new Size(410, 20) };
-            lblNivelInnTitlu = new Label { Location = new Point(290, 170), Size = new Size(115, 20), Text = "Inovație adăugată:" };
-            numNivelInn = new NumericUpDown { Location = new Point(415, 167), Size = new Size(70, 22), Minimum = -100, Maximum = 100 };
-            lblNivelStresTitlu = new Label { Location = new Point(290, 200), Size = new Size(115, 20), Text = "Cost Stres:" };
-            numNivelStres = new NumericUpDown { Location = new Point(415, 197), Size = new Size(70, 22), Minimum = -100, Maximum = 100 };
-            lblNivelProgTitlu = new Label { Location = new Point(290, 230), Size = new Size(115, 20), Text = "Progress adăugat:" };
-            numNivelProg = new NumericUpDown { Location = new Point(415, 227), Size = new Size(70, 22), Minimum = -100, Maximum = 100 };
+            lblNivelEfecteTitlu = new Label { Location = new Point(290, 170), Size = new Size(200, 20), Text = "Efecte asupra statusurilor:" };
+            lstNivelEfecte = new ListBox { Location = new Point(290, 195), Size = new Size(220, 95) };
+            btnAdaugaNivelEfect = new Button { Location = new Point(520, 195), Size = new Size(80, 24), Text = "➕ Adaugă" };
+            btnStergeNivelEfect = new Button { Location = new Point(520, 223), Size = new Size(80, 24), Text = "❌ Șterge" };
+            cmbNivelEfectProp = new ComboBox { Location = new Point(290, 300), Size = new Size(130, 22), DropDownStyle = ComboBoxStyle.DropDownList };
+            numNivelEfectVal = new NumericUpDown { Location = new Point(430, 300), Size = new Size(70, 22), Minimum = -100, Maximum = 100 };
 
             txtIdeeId.TextChanged += txtIdeeId_TextChanged;
             txtIdeeNume.TextChanged += txtIdeeNume_TextChanged;
@@ -1087,12 +1225,28 @@ namespace proiect_poo
             btnStergeNivel.Click += btnStergeNivel_Click;
             btnNivelSus.Click += btnNivelSus_Click;
             btnNivelJos.Click += btnNivelJos_Click;
-            numNivelNr.Value = 1;
-            numNivelNr.ValueChanged += numNivelNr_ValueChanged;
-            txtNivelDesc.TextChanged += txtNivelDesc_TextChanged;
-            numNivelInn.ValueChanged += numNivelInn_ValueChanged;
-            numNivelStres.ValueChanged += numNivelStres_ValueChanged;
-            numNivelProg.ValueChanged += numNivelProg_ValueChanged;
+            lblNivelNrTitlu = new Label { Location = new Point(290, 43), Size = new Size(80, 20), Text = "Număr Nivel:" };
+
+            // ADĂUGA ACEASTĂ LINIE (Inițializarea lipsea):
+            numNivelNr = new NumericUpDown();
+            numNivelNr.Location = new Point(380, 40);
+            numNivelNr.Size = new Size(60, 22);
+            numNivelNr.Minimum = 0;
+
+            lblNivelDescTitlu = new Label { Location = new Point(290, 73), Size = new Size(80, 20), Text = "Descriere:" };
+
+            // ADĂUGA ACEASTĂ LINIE (Inițializarea lipsea):
+            txtNivelDesc = new TextBox();
+            txtNivelDesc.Location = new Point(380, 70);
+            txtNivelDesc.Size = new Size(410, 80);
+            txtNivelDesc.Multiline = true;
+            txtNivelDesc.ScrollBars = ScrollBars.Vertical;
+
+            btnAdaugaNivelEfect.Click += btnAdaugaNivelEfect_Click;
+            btnStergeNivelEfect.Click += btnStergeNivelEfect_Click;
+
+            cmbNivelEfectProp.SelectedIndexChanged += cmbNivelEfectProp_SelectedIndexChanged;
+            numNivelEfectVal.ValueChanged += numNivelEfectVal_ValueChanged;
 
             panelEditareIdee.Controls.Add(lblIdeeTitlu);
             panelEditareIdee.Controls.Add(lblIdeeIdTitlu);
@@ -1105,16 +1259,31 @@ namespace proiect_poo
             panelEditareIdee.Controls.Add(btnNivelJos);
             panelEditareIdee.Controls.Add(btnAdaugaNivel);
             panelEditareIdee.Controls.Add(btnStergeNivel);
-            panelEditareIdee.Controls.Add(lblNivelNrTitlu);
-            panelEditareIdee.Controls.Add(numNivelNr);
-            panelEditareIdee.Controls.Add(lblNivelDescTitlu);
-            panelEditareIdee.Controls.Add(txtNivelDesc);
-            panelEditareIdee.Controls.Add(lblNivelInnTitlu);
-            panelEditareIdee.Controls.Add(numNivelInn);
-            panelEditareIdee.Controls.Add(lblNivelStresTitlu);
-            panelEditareIdee.Controls.Add(numNivelStres);
-            panelEditareIdee.Controls.Add(lblNivelProgTitlu);
-            panelEditareIdee.Controls.Add(numNivelProg);
+            panelEditareIdee.Controls.Add(lblNivelEfecteTitlu);
+            panelEditareIdee.Controls.Add(lstNivelEfecte);
+            panelEditareIdee.Controls.Add(btnAdaugaNivelEfect);
+            panelEditareIdee.Controls.Add(btnStergeNivelEfect);
+            panelEditareIdee.Controls.Add(cmbNivelEfectProp);
+            panelEditareIdee.Controls.Add(numNivelEfectVal);
+
+            this.lblNivelDescriere = new System.Windows.Forms.Label();
+            this.txtNivelDescriere = new System.Windows.Forms.TextBox();
+
+            this.lblNivelDescriere.Location = new System.Drawing.Point(350, 75); // Mutat cu 60px mai la dreapta
+            this.lblNivelDescriere.Size = new System.Drawing.Size(80, 20);
+            this.lblNivelDescriere.Text = "Descriere:";
+
+            this.txtNivelDescriere.Location = new System.Drawing.Point(440, 72); // Mutat cu 60px mai la dreapta
+            this.txtNivelDescriere.Size = new System.Drawing.Size(220, 60);
+            this.txtNivelDescriere.Multiline = true;
+            this.txtNivelDescriere.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+
+            // Legăm evenimentul pe controlul corect
+            this.txtNivelDescriere.TextChanged += new System.EventHandler(this.txtNivelDescriere_TextChanged);
+
+            // IMPORTANT: Adaugă-le în panelEditareIdee (unde se află și lstNivele / numNivelNr)
+            this.panelEditareIdee.Controls.Add(this.lblNivelDescriere);
+            this.panelEditareIdee.Controls.Add(this.txtNivelDescriere);
 
             // ── Form ──
             this.SuspendLayout();
