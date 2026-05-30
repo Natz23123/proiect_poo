@@ -49,6 +49,7 @@ namespace proiect_poo
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMeniu));
             this.btnJoaca = new System.Windows.Forms.Button();
             this.btnEditor = new System.Windows.Forms.Button();
             this.btnIesire = new System.Windows.Forms.Button();
@@ -148,8 +149,10 @@ namespace proiect_poo
             this.Controls.Add(this.btnEditor);
             this.Controls.Add(this.btnJoaca);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "FormMeniu";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
