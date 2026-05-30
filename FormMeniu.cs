@@ -7,6 +7,7 @@ namespace proiect_poo
     {
         private Button btnJoaca;
         private Button btnEditor;
+        private PictureBox pictureBox1;
         private Button btnIesire;
 
         public FormMeniu()
@@ -47,11 +48,17 @@ namespace proiect_poo
             this.btnJoaca = new System.Windows.Forms.Button();
             this.btnEditor = new System.Windows.Forms.Button();
             this.btnIesire = new System.Windows.Forms.Button();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
             // btnJoaca
             // 
-            this.btnJoaca.Location = new System.Drawing.Point(308, 144);
+            this.btnJoaca.FlatAppearance.BorderColor = System.Drawing.Color.White;
+            this.btnJoaca.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnJoaca.Font = new System.Drawing.Font("Consolas", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnJoaca.ForeColor = System.Drawing.SystemColors.Control;
+            this.btnJoaca.Location = new System.Drawing.Point(386, 250);
             this.btnJoaca.Name = "btnJoaca";
             this.btnJoaca.Size = new System.Drawing.Size(147, 52);
             this.btnJoaca.TabIndex = 0;
@@ -61,7 +68,11 @@ namespace proiect_poo
             // 
             // btnEditor
             // 
-            this.btnEditor.Location = new System.Drawing.Point(308, 219);
+            this.btnEditor.FlatAppearance.BorderColor = System.Drawing.Color.White;
+            this.btnEditor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEditor.Font = new System.Drawing.Font("Consolas", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnEditor.ForeColor = System.Drawing.SystemColors.Control;
+            this.btnEditor.Location = new System.Drawing.Point(386, 320);
             this.btnEditor.Name = "btnEditor";
             this.btnEditor.Size = new System.Drawing.Size(147, 52);
             this.btnEditor.TabIndex = 1;
@@ -71,7 +82,11 @@ namespace proiect_poo
             // 
             // btnIesire
             // 
-            this.btnIesire.Location = new System.Drawing.Point(308, 298);
+            this.btnIesire.FlatAppearance.BorderColor = System.Drawing.Color.White;
+            this.btnIesire.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnIesire.Font = new System.Drawing.Font("Consolas", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnIesire.ForeColor = System.Drawing.SystemColors.Control;
+            this.btnIesire.Location = new System.Drawing.Point(386, 387);
             this.btnIesire.Name = "btnIesire";
             this.btnIesire.Size = new System.Drawing.Size(147, 52);
             this.btnIesire.TabIndex = 2;
@@ -79,14 +94,32 @@ namespace proiect_poo
             this.btnIesire.UseVisualStyleBackColor = true;
             this.btnIesire.Click += new System.EventHandler(this.btnIesire_Click);
             // 
+            // pictureBox1
+            // 
+            this.pictureBox1.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            this.pictureBox1.Image = global::proiect_poo.Properties.Resources.title;
+            this.pictureBox1.Location = new System.Drawing.Point(26, 24);
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.Size = new System.Drawing.Size(904, 150);
+            this.pictureBox1.TabIndex = 3;
+            this.pictureBox1.TabStop = false;
+            // 
             // FormMeniu
             // 
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.BackColor = System.Drawing.SystemColors.Desktop;
+            this.ClientSize = new System.Drawing.Size(942, 541);
+            this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.btnIesire);
             this.Controls.Add(this.btnEditor);
             this.Controls.Add(this.btnJoaca);
             this.Name = "FormMeniu";
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
+
+        }
+
+        private void richTextBox1_TextChanged(object sender, EventArgs e)
+        {
 
         }
     }
