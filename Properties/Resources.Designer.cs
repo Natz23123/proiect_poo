@@ -61,12 +61,11 @@ namespace proiect_poo.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
         /// </summary>
-        internal static System.Drawing.Bitmap ascii_art_text {
+        internal static System.IO.UnmanagedMemoryStream menu_hover {
             get {
-                object obj = ResourceManager.GetObject("ascii-art-text", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
+                return ResourceManager.GetStream("menu_hover", resourceCulture);
             }
         }
         

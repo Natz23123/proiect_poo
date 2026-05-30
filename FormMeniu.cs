@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
-
+using System.Media;
 namespace proiect_poo
 {
     public partial class FormMeniu : Form
@@ -178,7 +178,9 @@ namespace proiect_poo
             lblArrowHover.Left = hoveredButton.Left - lblArrowHover.Width;
             lblArrowHover.Top = hoveredButton.Top + 5;
             lblArrowHover.Visible = true;
-
+            timerBlinkingArrow.Stop();
+            SoundPlayer hoverSound = new SoundPlayer(Properties.Resources.menu_hover);
+            hoverSound.Play();
             timerBlinkingArrow.Start();
         }
     }
