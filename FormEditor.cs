@@ -9,8 +9,6 @@ namespace proiect_poo
 {
     public partial class FormEditor : Form
     {
-        private Label lblNivelDescriere;
-        private TextBox txtNivelDescriere;
         // ── State ─────────────────────────────────────────────────────────────
         private StoryJsonDefinition _povesteCurenta;
         private string _caleFichierCurent = "";
@@ -18,7 +16,7 @@ namespace proiect_poo
         private DecisionJsonDefinition _decizieCurenta;
         private IdeaJsonDefinition _ideeCurenta;
         private ResearchLevelJsonDefinition _nivelCurent;
-        private ConditionNode _condChildCurent;   // child AND/OR selectat curent
+        private ConditionNode _condChildCurent;
         private bool _seIncarcaDatele = false;
 
         // ── Controale toolbar ─────────────────────────────────────────────────
@@ -42,18 +40,17 @@ namespace proiect_poo
 
         // ── Panel editare BLOC ────────────────────────────────────────────────
         private Panel panelEditareBloc;
-        private Label lblEditareBlocTitlu, lblBlockIdTitlu, lblBlockTextTitlu;
+        private Label lblBlockIdTitlu, lblBlockTextTitlu;
         private TextBox txtBlockId, txtBlockText;
         private Button btnStergeBloc;
 
-        // Câmpuri noi pentru tipuri de blocuri
+        // Câmpuri tipuri de blocuri
         private Label lblBlockTypeTitlu;
         private ComboBox cmbBlockType;
         private Label lblNextBlockTitlu;
         private TextBox txtNextBlock;
 
         // Decizii
-        private Label lblDeciziiTitlu;
         private ListBox lstDecizii;
         private Button btnAdaugaDecizie, btnStergeDecizie, btnDecizieSus, btnDecizieJos;
 
@@ -66,8 +63,8 @@ namespace proiect_poo
         private ComboBox cmbUnlocksIdee;
 
         // Condiție
-        private Label lblCondTitlu, lblCondProp, lblCondOp, lblCondVal;
-        private ComboBox cmbCondTip;         // Fără / Comparație / AND / OR
+        private Label lblCondProp, lblCondOp, lblCondVal;
+        private ComboBox cmbCondTip;
         private ComboBox cmbCondProp, cmbCondOp;
         private NumericUpDown numCondVal;
 
@@ -85,22 +82,20 @@ namespace proiect_poo
 
         // ── Panel editare IDEE ────────────────────────────────────────────────
         private Panel panelEditareIdee;
-        private Label lblEditareIdeeTitlu, lblIdeeIdTitlu, lblIdeeNumeTitlu;
+        private Label lblIdeeIdTitlu, lblIdeeNumeTitlu;
         private TextBox txtIdeeId, txtIdeeNume;
         private Label lblNiveluriTitlu;
         private ListBox lstNivele;
         private Button btnAdaugaNivel, btnStergeNivel, btnNivelSus, btnNivelJos;
-        private Label lblNivelNrTitlu, lblNivelDescTitlu, lblNivelInnTitlu, lblNivelStresTitlu, lblNivelProgTitlu;
+        private Label lblNivelNrTitlu, lblNivelDescTitlu;
 
-        // Câmpuri editare nivel research (Dinamice)
-        
+        // Câmpuri editare nivel research
         private NumericUpDown numNivelNr;
         private Label lblNivelEfecteTitlu;
         private ListBox lstNivelEfecte;
         private Button btnAdaugaNivelEfect, btnStergeNivelEfect;
         private ComboBox cmbNivelEfectProp;
         private NumericUpDown numNivelEfectVal;
-
         private TextBox txtNivelDesc;
 
         // ═════════════════════════════════════════════════════════════════════
@@ -398,12 +393,8 @@ namespace proiect_poo
         {
             if (_blocCurent == null) return;
             bool esteResearch = (_blocCurent.BlockType == "research");
-
-            // Câmpul de NextBlock rămâne vizibil pentru a permite tranziții directe dacă nu se pun decizii
             lblNextBlockTitlu.Visible = esteResearch;
             txtNextBlock.Visible = esteResearch;
-
-            // Reactivăm complet controalele pentru decizii, indiferent de tipul blocului
             lstDecizii.Enabled = true;
             btnAdaugaDecizie.Enabled = true;
             btnStergeDecizie.Enabled = true;
@@ -435,17 +426,13 @@ namespace proiect_poo
             txtDecizieEfecte.Text = JsonConvert.SerializeObject(
                 _decizieCurenta.Effects ?? new List<EffectJsonDefinition>(), Formatting.Indented);
 
-            // Unlock idee — reîncarcă opțiunile din lista de idei curentă
             ActualizeazaComboIdei();
             string uid = _decizieCurenta.UnlocksIdeaId;
             cmbUnlocksIdee.SelectedIndex = string.IsNullOrEmpty(uid) ? 0
                 : Math.Max(0, cmbUnlocksIdee.Items.Cast<string>().ToList().IndexOf(uid));
 
-            // ── FIX BUG 2: Populăm listele cu proprietățile reale din poveste (stres, progress, etc.)
             PopuleazaComboProprietati(cmbCondProp);
             PopuleazaComboProprietati(cmbCondCopilProp);
-
-            // Condiție
             IncarcaConditionUI(_decizieCurenta.Condition);
 
             _seIncarcaDatele = false;
@@ -567,12 +554,10 @@ namespace proiect_poo
         {
             if (_seIncarcaDatele) return;
             AscundeControleCond();
-
             int sel = cmbCondTip.SelectedIndex;
             if (sel == 0) { SalveazaCondition(); return; }
             if (sel == 1) AfiseazaControleCond(false);
             if (sel == 2 || sel == 3) AfiseazaControleCond(true);
-
             SalveazaCondition();
         }
 
@@ -606,7 +591,6 @@ namespace proiect_poo
         {
             if (_decizieCurenta == null) return;
             int sel = cmbCondTip.SelectedIndex;
-
             if (sel == 0) { _decizieCurenta.Condition = null; return; }
 
             if (sel == 1)
@@ -645,7 +629,6 @@ namespace proiect_poo
         {
             int idx = lstCondCopii.SelectedIndex;
             if (idx < 0 || !(_decizieCurenta?.Condition is LogicalNode logic) || idx >= logic.Children.Count) return;
-
             if (logic.Children[idx] is ComparisonNode c)
             {
                 _seIncarcaDatele = true;
@@ -747,7 +730,7 @@ namespace proiect_poo
             {
                 _nivelCurent = null;
                 SetareStareEditareNivel(false);
-                txtNivelDescriere.Text = ""; // <--- Aici cu denumirea completă
+                txtNivelDesc.Text = "";
                 return;
             }
 
@@ -755,7 +738,7 @@ namespace proiect_poo
             _seIncarcaDatele = true;
 
             numNivelNr.Value = _nivelCurent.Level;
-            txtNivelDescriere.Text = _nivelCurent.Description ?? ""; // <--- Aici cu denumirea completă
+            txtNivelDesc.Text = _nivelCurent.Description ?? "";
 
             PopuleazaComboProprietati(cmbNivelEfectProp);
             ActualizeazaListaNivelEfecte();
@@ -779,7 +762,7 @@ namespace proiect_poo
             {
                 Level = nou,
                 Description = "Descriere nivel " + nou,
-                Effects = new List<EffectJsonDefinition>() // listă goală de efecte
+                Effects = new List<EffectJsonDefinition>()
             });
             ActualizeazaListaNivele(); ActualizeazaTreeView(); SelecteazaTag(_ideeCurenta);
             lstNivele.SelectedIndex = lstNivele.Items.Count - 1;
@@ -802,36 +785,23 @@ namespace proiect_poo
         private void txtNivelDesc_TextChanged(object sender, EventArgs e)
         {
             if (_seIncarcaDatele || _nivelCurent == null) return;
-
-            // Salvează textul în obiectul din memorie
             _nivelCurent.Description = txtNivelDesc.Text;
-
-            // Actualizează live textul din TreeView în stânga
             if (treeViewStructura.SelectedNode != null && treeViewStructura.SelectedNode.Tag == _nivelCurent)
-            {
                 treeViewStructura.SelectedNode.Text = $"Nivel {_nivelCurent.Level}: {Scurt(_nivelCurent.Description, 20)}";
-            }
         }
 
         private void ActualizeazaListaNivelEfecte()
         {
-            // Presupunem că ListBox-ul tău pentru efectele nivelului se numește lstNivelEfecte sau similar
-            // Înlocuiește 'lstNivelEfecte' cu numele real al ListBox-ului tău de efecte pentru idei
             lstNivelEfecte.Items.Clear();
-
             if (_nivelCurent == null || _nivelCurent.Effects == null) return;
-
             foreach (var ef in _nivelCurent.Effects)
-            {
                 lstNivelEfecte.Items.Add(ef);
-            }
         }
 
         private void lstNivelEfecte_SelectedIndexChanged(object sender, EventArgs e)
         {
             int idx = lstNivelEfecte.SelectedIndex;
             if (idx < 0 || _nivelCurent?.Effects == null || idx >= _nivelCurent.Effects.Count) return;
-
             var ef = _nivelCurent.Effects[idx];
             _seIncarcaDatele = true;
             SelecteazaCombo(cmbNivelEfectProp, ef.Property);
@@ -846,63 +816,33 @@ namespace proiect_poo
                 MessageBox.Show("Selectează mai întâi un nivel de cercetare!");
                 return;
             }
-
-            // Citim proprietatea selectată din ComboBox-ul tău (ex: cmbNivelEfectProp)
             string propSelectata = cmbNivelEfectProp.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(propSelectata))
             {
                 MessageBox.Show("Selectează o proprietate din listă!");
                 return;
             }
-
-            // Preluăm valoarea din NumericUpDown-ul corespunzător (ex: numNivelEfectVal)
             int valoare = (int)numNivelEfectVal.Value;
-
-            // Ne asigurăm că lista de efecte nu este null
             if (_nivelCurent.Effects == null)
-            {
                 _nivelCurent.Effects = new List<EffectJsonDefinition>();
-            }
 
-            // Creăm noul obiect conform formatului dorit
             var nouEfect = new EffectJsonDefinition
             {
                 Type = "ADD",
                 Property = propSelectata,
                 Value = valoare
             };
-
-            // Îl adăugăm în lista din memorie
             _nivelCurent.Effects.Add(nouEfect);
-
-            // Reîmprospătăm interfața vizuală
             ActualizeazaListaNivelEfecte();
-        }
-        private void txtNivelDescriere_TextChanged(object sender, EventArgs e)
-        {
-            if (_seIncarcaDatele || _nivelCurent == null) return;
-
-            // Salvează descrierea în obiectul curent
-            _nivelCurent.Description = txtNivelDescriere.Text;
-
-            // Actualizează textul în nodul din TreeView folosind funcția Scurt originală a proiectului tău
-            if (treeViewStructura.SelectedNode != null && treeViewStructura.SelectedNode.Tag == _nivelCurent)
-            {
-                treeViewStructura.SelectedNode.Text = $"Nivel {_nivelCurent.Level}: {Scurt(_nivelCurent.Description, 20)}";
-            }
         }
 
         private void btnStergeNivelEfect_Click(object sender, EventArgs e)
         {
             if (_nivelCurent == null || lstNivelEfecte.SelectedItem == null) return;
-
             var efSelectat = lstNivelEfecte.SelectedItem as EffectJsonDefinition;
             if (efSelectat != null && _nivelCurent.Effects != null)
             {
-                // Ștergem efectul din lista din memorie
                 _nivelCurent.Effects.Remove(efSelectat);
-
-                // Actualizăm ListBox-ul
                 ActualizeazaListaNivelEfecte();
             }
         }
@@ -950,28 +890,28 @@ namespace proiect_poo
         }
 
         private void SelecteazaCombo(ComboBox cmb, string val)
-{
-    if (cmb == null) return;
-    
-    int idx = cmb.Items.IndexOf(val);
-    if (idx >= 0)
-    {
-        cmb.SelectedIndex = idx;
-    }
-    else
-    {
-        // Schimbare de siguranță: selectăm primul element DOAR dacă lista nu e goală
-        if (cmb.Items.Count > 0)
-            cmb.SelectedIndex = 0;
-        else
-            cmb.SelectedIndex = -1; // -1 înseamnă că nu selectăm nimic (listă goală), prevenind crash-ul
-    }
-}
+        {
+            if (cmb == null) return;
+            int idx = cmb.Items.IndexOf(val);
+            if (idx >= 0) cmb.SelectedIndex = idx;
+            else if (cmb.Items.Count > 0) cmb.SelectedIndex = 0;
+            else cmb.SelectedIndex = -1;
+        }
 
         private string Scurt(string t, int max)
         {
             if (string.IsNullOrEmpty(t)) return "";
             return t.Length <= max ? t : t.Substring(0, max) + "...";
+        }
+
+        private void PopuleazaComboProprietati(ComboBox cmb)
+        {
+            string sel = cmb.SelectedItem?.ToString();
+            cmb.Items.Clear();
+            foreach (var p in _povesteCurenta?.Properties ?? new List<PropertyJsonDefinition>())
+                cmb.Items.Add(p.Key);
+            if (!string.IsNullOrEmpty(sel)) SelecteazaCombo(cmb, sel);
+            else if (cmb.Items.Count > 0) cmb.SelectedIndex = 0;
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -1031,8 +971,6 @@ namespace proiect_poo
                 Text = "📝 EDITARE BLOC",
                 Font = new Font("Arial", 10, FontStyle.Bold)
             };
-
-            // Repoziționare elemente de control de sus pe o singură linie fluidă
             lblBlockIdTitlu = new Label { Location = new Point(10, 43), Size = new Size(50, 20), Text = "ID Bloc:" };
             txtBlockId = new TextBox { Location = new Point(65, 40), Size = new Size(130, 20) };
 
@@ -1225,26 +1163,21 @@ namespace proiect_poo
             btnStergeNivel.Click += btnStergeNivel_Click;
             btnNivelSus.Click += btnNivelSus_Click;
             btnNivelJos.Click += btnNivelJos_Click;
-            lblNivelNrTitlu = new Label { Location = new Point(290, 43), Size = new Size(80, 20), Text = "Număr Nivel:" };
 
-            // ADĂUGA ACEASTĂ LINIE (Inițializarea lipsea):
-            numNivelNr = new NumericUpDown();
-            numNivelNr.Location = new Point(380, 40);
-            numNivelNr.Size = new Size(60, 22);
-            numNivelNr.Minimum = 0;
+            lblNivelNrTitlu = new Label { Location = new Point(290, 43), Size = new Size(80, 20), Text = "Număr Nivel:" };
+            numNivelNr = new NumericUpDown { Location = new Point(380, 40), Size = new Size(60, 22), Minimum = 0 };
 
             lblNivelDescTitlu = new Label { Location = new Point(290, 73), Size = new Size(80, 20), Text = "Descriere:" };
-
-            // ADĂUGA ACEASTĂ LINIE (Inițializarea lipsea):
-            txtNivelDesc = new TextBox();
-            txtNivelDesc.Location = new Point(380, 70);
-            txtNivelDesc.Size = new Size(410, 80);
-            txtNivelDesc.Multiline = true;
-            txtNivelDesc.ScrollBars = ScrollBars.Vertical;
+            txtNivelDesc = new TextBox
+            {
+                Location = new Point(380, 70),
+                Size = new Size(410, 80),
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical
+            };
 
             btnAdaugaNivelEfect.Click += btnAdaugaNivelEfect_Click;
             btnStergeNivelEfect.Click += btnStergeNivelEfect_Click;
-
             cmbNivelEfectProp.SelectedIndexChanged += cmbNivelEfectProp_SelectedIndexChanged;
             numNivelEfectVal.ValueChanged += numNivelEfectVal_ValueChanged;
 
@@ -1265,25 +1198,6 @@ namespace proiect_poo
             panelEditareIdee.Controls.Add(btnStergeNivelEfect);
             panelEditareIdee.Controls.Add(cmbNivelEfectProp);
             panelEditareIdee.Controls.Add(numNivelEfectVal);
-
-            this.lblNivelDescriere = new System.Windows.Forms.Label();
-            this.txtNivelDescriere = new System.Windows.Forms.TextBox();
-
-            this.lblNivelDescriere.Location = new System.Drawing.Point(350, 75); // Mutat cu 60px mai la dreapta
-            this.lblNivelDescriere.Size = new System.Drawing.Size(80, 20);
-            this.lblNivelDescriere.Text = "Descriere:";
-
-            this.txtNivelDescriere.Location = new System.Drawing.Point(440, 72); // Mutat cu 60px mai la dreapta
-            this.txtNivelDescriere.Size = new System.Drawing.Size(220, 60);
-            this.txtNivelDescriere.Multiline = true;
-            this.txtNivelDescriere.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-
-            // Legăm evenimentul pe controlul corect
-            this.txtNivelDescriere.TextChanged += new System.EventHandler(this.txtNivelDescriere_TextChanged);
-
-            // IMPORTANT: Adaugă-le în panelEditareIdee (unde se află și lstNivele / numNivelNr)
-            this.panelEditareIdee.Controls.Add(this.lblNivelDescriere);
-            this.panelEditareIdee.Controls.Add(this.txtNivelDescriere);
 
             // ── Form ──
             this.SuspendLayout();
@@ -1315,16 +1229,6 @@ namespace proiect_poo
             this.Controls.Add(panelEditareIdee);
 
             this.ResumeLayout(false);
-        }
-
-        private void PopuleazaComboProprietati(ComboBox cmb)
-        {
-            string sel = cmb.SelectedItem?.ToString();
-            cmb.Items.Clear();
-            foreach (var p in _povesteCurenta?.Properties ?? new List<PropertyJsonDefinition>())
-                cmb.Items.Add(p.Key);
-            if (!string.IsNullOrEmpty(sel)) SelecteazaCombo(cmb, sel);
-            else if (cmb.Items.Count > 0) cmb.SelectedIndex = 0;
         }
     }
 }

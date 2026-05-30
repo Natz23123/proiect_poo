@@ -31,6 +31,7 @@ namespace proiect_poo
                                     $"Asigură-te că l-ai copiat în folderul 'bin/Debug' al proiectului tău.");
                     return;
                 }
+
                 StoryJsonDefinition poveste = JsonManager.IncarcaPoveste(caleFisier);
                 _gameState.InitializareJoc(poveste);
                 ActualizeazaInterfata();
@@ -113,7 +114,7 @@ namespace proiect_poo
 
             string blockType = blocCurent.BlockType ?? "normal";
 
-            // --- Decizii normale (prezente indiferent de tipul blocului) ---
+            // Decizii normale
             foreach (var decizie in blocCurent.Decisions)
             {
                 if (decizie.Condition != null && !decizie.Condition.Evaluate(_gameState.ToateStatusurile))
@@ -131,8 +132,7 @@ namespace proiect_poo
                 panelButoane.Controls.Add(btn);
             }
 
-            // --- Buton agregat RESEARCH ---
-            // Apare în blockType "research", dar NUMAI dacă există cel puțin o idee researchabilă
+            // Buton agregat RESEARCH
             if (blockType == "research")
             {
                 bool areIdeiDeResearch = _gameState.IdeaResearchLevels.Keys
@@ -155,8 +155,7 @@ namespace proiect_poo
                     panelButoane.Controls.Add(btnResearch);
                 }
 
-                // --- Buton agregat IMPLEMENT (vizibil și din blocul de research) ---
-                // Apare dacă există cel puțin o idee cu research level >= 1
+                // Buton agregat IMPLEMENT
                 bool areIdeiDeImplementat = _gameState.IdeaResearchLevels.Any(kv => kv.Value >= 1);
                 if (areIdeiDeImplementat)
                 {
@@ -180,9 +179,6 @@ namespace proiect_poo
         // =====================================================================
         // POPUP PICKER
         // =====================================================================
-
-        // Deschide o fereastră modală cu butoane pentru fiecare opțiune
-        // Fiecare opțiune are: textul butonului, textul tooltip-ului și acțiunea la click
         private void ShowIdeaPickerDialog(string titlu, List<(string label, string tooltip, Action actiune)> optiuni)
         {
             Form popup = new Form();
@@ -210,7 +206,7 @@ namespace proiect_poo
                 btn.Click += (s, e) =>
                 {
                     popup.Close();
-                    actiune();         // actiunea apelează deja ActualizeazaInterfata()
+                    actiune();
                 };
                 panel.Controls.Add(btn);
             }
@@ -219,7 +215,7 @@ namespace proiect_poo
             popup.ShowDialog(this);
         }
 
-        // Construiește lista de opțiuni pentru research (câte una per idee researchabilă)
+        // Construiește lista de opțiuni pentru research
         private List<(string, string, Action)> BuildResearchOptions(int decisionsRequired, string nextBlock)
         {
             var lista = new List<(string, string, Action)>();
@@ -233,7 +229,7 @@ namespace proiect_poo
                 var idea = _gameState.PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == ideaId);
                 if (idea == null) continue;
 
-                // Construim tooltip-ul din lista de efecte
+                // Tooltip din efecte
                 string tooltipText = "Efecte:\n";
                 if (nextLvl.Effects != null && nextLvl.Effects.Count > 0)
                 {
@@ -246,7 +242,6 @@ namespace proiect_poo
                             string semn = ef.Value >= 0 ? "+" : "";
                             tooltipText += $"{nume}: {semn}{ef.Value}\n";
                         }
-                        // poți adăuga și alte tipuri de efecte dacă există
                     }
                 }
                 else
@@ -268,7 +263,7 @@ namespace proiect_poo
             return lista;
         }
 
-        // Construiește lista de opțiuni pentru implement (câte una per idee cu nivel >= 1)
+        // Construiește lista de opțiuni pentru implement
         private List<(string, string, Action)> BuildImplementOptions(int decisionsRequired, string nextBlock)
         {
             var lista = new List<(string, string, Action)>();
@@ -278,7 +273,6 @@ namespace proiect_poo
                 string ideaId = kv.Key;
                 int level = kv.Value;
 
-                // Verificăm dacă deja a fost implementat acest nivel
                 if (_gameState.IdeaImplementationLevels.TryGetValue(ideaId, out int implLevel) && implLevel >= level)
                     continue;
 
@@ -286,7 +280,6 @@ namespace proiect_poo
                 var levelDef = idea?.ResearchLevels.FirstOrDefault(l => l.Level == level);
                 if (idea == null || levelDef == null) continue;
 
-                // Tooltip din efecte
                 string tooltipText = "Efecte:\n";
                 if (levelDef.Effects != null && levelDef.Effects.Count > 0)
                 {
@@ -344,19 +337,13 @@ namespace proiect_poo
                 {
                     if (efect.Type?.ToUpper() == "UNLOCK_LEVEL")
                     {
-                        // 1. Verificăm ce nivel este deblocat în acest moment în joc pentru această idee
                         int maxAllowedAcum = 0;
                         if (_gameState.IdeaMaxAllowedLevels.ContainsKey(efect.Property))
-                        {
                             maxAllowedAcum = _gameState.IdeaMaxAllowedLevels[efect.Property];
-                        }
 
-                        // 2. Dacă nivelul oferit de buton (ex: Nivel 2) este deja deblocat (ex: avem deja 2 sau mai mult)
-                        // ascundem complet acest rând din tooltip folosind 'continue'
                         if (efect.Value <= maxAllowedAcum)
                             continue;
 
-                        // Găsim numele ideii pentru un display mai frumos
                         var ideeGasita = _gameState.PovesteIncarcata.Ideas?.FirstOrDefault(i => i.Id == efect.Property);
                         string numeIdee = ideeGasita != null ? ideeGasita.Name : efect.Property;
 
@@ -366,7 +353,7 @@ namespace proiect_poo
                     }
 
                     var status = _gameState.ToateStatusurile.FirstOrDefault(s => s.Key == efect.Property);
-                    if (status != null) // E un status normal
+                    if (status != null)
                     {
                         string semn = efect.Value >= 0 ? "+" : "";
                         result += $"\n{status.Nume}: {semn}{efect.Value}";
@@ -382,9 +369,7 @@ namespace proiect_poo
             }
 
             if (!areEfecteAfisabile)
-            {
                 return "Fără efecte directe.";
-            }
 
             return result;
         }
