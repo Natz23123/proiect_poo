@@ -35,29 +35,31 @@
             // 
             // lblTextHolder
             // 
+            this.lblTextHolder.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.lblTextHolder.Font = new System.Drawing.Font("Pixel Operator", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTextHolder.Location = new System.Drawing.Point(18, 385);
             this.lblTextHolder.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblTextHolder.Name = "lblTextHolder";
             this.lblTextHolder.Size = new System.Drawing.Size(1164, 265);
             this.lblTextHolder.TabIndex = 0;
-            this.lblTextHolder.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.lblTextHolder.Click += new System.EventHandler(this.lblTextHolder_Click);
             // 
             // panelButoane
             // 
+            this.panelButoane.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelButoane.Location = new System.Drawing.Point(18, 20);
             this.panelButoane.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.panelButoane.Name = "panelButoane";
-            this.panelButoane.Size = new System.Drawing.Size(741, 310);
+            this.panelButoane.Size = new System.Drawing.Size(767, 310);
             this.panelButoane.TabIndex = 9;
             // 
             // panelHUD
             // 
-            this.panelHUD.Location = new System.Drawing.Point(950, 18);
+            this.panelHUD.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panelHUD.Location = new System.Drawing.Point(839, 18);
             this.panelHUD.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.panelHUD.Name = "panelHUD";
-            this.panelHUD.Size = new System.Drawing.Size(232, 312);
+            this.panelHUD.Size = new System.Drawing.Size(343, 312);
             this.panelHUD.TabIndex = 10;
             // 
             // Form1

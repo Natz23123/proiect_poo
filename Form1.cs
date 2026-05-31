@@ -85,16 +85,15 @@ namespace proiect_poo
                 lbl.AutoSize = true;
                 lbl.ForeColor = Color.White;
 
-                ProgressBar pb = new ProgressBar();
+                TerminalProgressBar pb = new TerminalProgressBar();
                 pb.Minimum = status.Min;
                 pb.Maximum = status.Max;
                 pb.Value = status.Valoare;
-                pb.ForeColor = Color.White;
 
                 bool isPrimary = index == 0;
-                lbl.Font = new Font("Segoe UI", isPrimary ? 12 : 10, FontStyle.Bold);
+                lbl.Font = new Font("Smallest Pixel-7", isPrimary ? 12 : 10, FontStyle.Bold);
                 lbl.Margin = new Padding(5, 0, 5, 0);
-                pb.Size = new Size(isPrimary ? 110 : 60, isPrimary ? 14 : 8);
+                pb.Size = new Size(isPrimary ? 240 : 180, isPrimary ? 30 : 20); // aici putem edita size-ul progress bar-ului
                 pb.Margin = new Padding(5, 1, 5, 0);
 
                 cutie.Controls.Add(lbl);

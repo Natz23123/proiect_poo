@@ -108,6 +108,9 @@
     <Compile Include="JSONManager\PropertyJsonDefinition.cs" />
     <Compile Include="Status.cs" />
     <Compile Include="JSONManager\StoryJsonDefinition.cs" />
+    <Compile Include="TerminalProgressBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="TextAnimation.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
