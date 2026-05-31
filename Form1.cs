@@ -16,6 +16,8 @@ namespace proiect_poo
         public Form1()
         {
             InitializeComponent();
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
             lblTextHolder.ForeColor = Color.White;
             _textAnimation = new TextAnimation(lblTextHolder, 25);
             _gameState = new GameState();
