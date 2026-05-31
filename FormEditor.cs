@@ -1164,14 +1164,14 @@ namespace proiect_poo
             btnNivelSus.Click += btnNivelSus_Click;
             btnNivelJos.Click += btnNivelJos_Click;
 
-            lblNivelNrTitlu = new Label { Location = new Point(290, 43), Size = new Size(80, 20), Text = "Număr Nivel:" };
-            numNivelNr = new NumericUpDown { Location = new Point(380, 40), Size = new Size(60, 22), Minimum = 0 };
+            lblNivelNrTitlu = new Label { Location = new Point(330, 43), Size = new Size(70, 20), Text = "Număr Nivel:" };
+            numNivelNr = new NumericUpDown { Location = new Point(400, 40), Size = new Size(60, 22), Minimum = 0 };
 
-            lblNivelDescTitlu = new Label { Location = new Point(290, 73), Size = new Size(80, 20), Text = "Descriere:" };
+            lblNivelDescTitlu = new Label { Location = new Point(330, 73), Size = new Size(70, 20), Text = "Descriere:" };
             txtNivelDesc = new TextBox
             {
-                Location = new Point(380, 70),
-                Size = new Size(410, 80),
+                Location = new Point(400, 70),
+                Size = new Size(400, 80),
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical
             };
@@ -1180,6 +1180,10 @@ namespace proiect_poo
             btnStergeNivelEfect.Click += btnStergeNivelEfect_Click;
             cmbNivelEfectProp.SelectedIndexChanged += cmbNivelEfectProp_SelectedIndexChanged;
             numNivelEfectVal.ValueChanged += numNivelEfectVal_ValueChanged;
+
+            // Evenimentele pentru noile controale
+            txtNivelDesc.TextChanged += txtNivelDesc_TextChanged;
+            numNivelNr.ValueChanged += numNivelNr_ValueChanged;
 
             panelEditareIdee.Controls.Add(lblIdeeTitlu);
             panelEditareIdee.Controls.Add(lblIdeeIdTitlu);
@@ -1198,6 +1202,12 @@ namespace proiect_poo
             panelEditareIdee.Controls.Add(btnStergeNivelEfect);
             panelEditareIdee.Controls.Add(cmbNivelEfectProp);
             panelEditareIdee.Controls.Add(numNivelEfectVal);
+
+            // Adăugăm și controalele noi
+            panelEditareIdee.Controls.Add(lblNivelNrTitlu);
+            panelEditareIdee.Controls.Add(numNivelNr);
+            panelEditareIdee.Controls.Add(lblNivelDescTitlu);
+            panelEditareIdee.Controls.Add(txtNivelDesc);
 
             // ── Form ──
             this.SuspendLayout();
