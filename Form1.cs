@@ -21,6 +21,12 @@ namespace proiect_poo
             lblTextHolder.ForeColor = Color.White;
             _textAnimation = new TextAnimation(lblTextHolder, 25);
             _gameState = new GameState();
+
+            // Activează stilizarea custom pentru tooltip-uri
+            _tooltip.OwnerDraw = true;
+            _tooltip.Draw += CustomToolTip_Draw;
+            _tooltip.Popup += CustomToolTip_Popup;
+
             IncarcaPovesteDinJson("default_story.json");
         }
 
@@ -96,7 +102,7 @@ namespace proiect_poo
                 bool isPrimary = index == 0;
                 lbl.Font = new Font("Smallest Pixel-7", isPrimary ? 12 : 10, FontStyle.Bold);
                 lbl.Margin = new Padding(5, 0, 5, 0);
-                pb.Size = new Size(isPrimary ? 240 : 180, isPrimary ? 30 : 20); // aici putem edita size-ul progress bar-ului
+                pb.Size = new Size(isPrimary ? 240 : 180, isPrimary ? 30 : 20);
                 pb.Margin = new Padding(5, 1, 5, 0);
 
                 cutie.Controls.Add(lbl);
@@ -326,10 +332,8 @@ namespace proiect_poo
             Button btn = new Button();
             btn.Text = text;
 
-
             btn.AutoSize = true;
             btn.MinimumSize = new Size(340, 45);
-            //btn.MaximumSize = new Size(400, 0);
             btn.Padding = new Padding(10, 5, 10, 5);
             btn.TextAlign = ContentAlignment.MiddleLeft;
 
@@ -402,6 +406,39 @@ namespace proiect_poo
         {
             if (_textAnimation.IsRunning)
                 _textAnimation.Skip();
+        }
+
+        // =====================================================================
+        // CUSTOM TOOLTIP STYLING
+        // =====================================================================
+        private void CustomToolTip_Popup(object sender, PopupEventArgs e)
+        {
+            // Calculează dimensiunea exactă a textului cu fontul pixelat
+            using (var font = new Font("Smallest Pixel-7", 12f, FontStyle.Regular))
+            {
+                var text = _tooltip.GetToolTip(e.AssociatedControl) ?? string.Empty;
+                var textSize = TextRenderer.MeasureText(text, font, new Size(int.MaxValue, int.MaxValue),
+                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                e.ToolTipSize = new Size(textSize.Width + 15, textSize.Height + 15);
+            }
+        }
+
+        private void CustomToolTip_Draw(object sender, DrawToolTipEventArgs e)
+        {
+            using (var font = new Font("Smallest Pixel-7", 12f, FontStyle.Regular))
+            using (var borderPen = new Pen(Color.White))
+            using (var backBrush = new SolidBrush(Color.Black))
+            {
+                // Fundal negru
+                e.Graphics.FillRectangle(backBrush, e.Bounds);
+                // Chenar alb
+                var borderRect = new Rectangle(e.Bounds.X, e.Bounds.Y, e.Bounds.Width - 1, e.Bounds.Height - 1);
+                e.Graphics.DrawRectangle(borderPen, borderRect);
+                // Text alb
+                var textRect = new Rectangle(e.Bounds.X + 7, e.Bounds.Y + 7, e.Bounds.Width - 14, e.Bounds.Height - 14);
+                TextRenderer.DrawText(e.Graphics, e.ToolTipText, font, textRect, Color.White,
+                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            }
         }
     }
 }
