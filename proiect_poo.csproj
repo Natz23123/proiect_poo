@@ -146,6 +146,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\ascii-art-text.png" />
+    <None Include="Assets\scanlines_pixels_2.png" />
+    <None Include="Assets\scan_line_pixels.png" />
     <None Include="Assets\title.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

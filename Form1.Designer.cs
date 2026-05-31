@@ -37,7 +37,7 @@
             // 
             this.lblTextHolder.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.lblTextHolder.Font = new System.Drawing.Font("Pixel Operator", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblTextHolder.Location = new System.Drawing.Point(18, 385);
+            this.lblTextHolder.Location = new System.Drawing.Point(13, 365);
             this.lblTextHolder.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblTextHolder.Name = "lblTextHolder";
             this.lblTextHolder.Size = new System.Drawing.Size(1164, 265);
@@ -67,6 +67,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Desktop;
+            this.BackgroundImage = global::proiect_poo.Properties.Resources.scanlines_pixels_2;
             this.ClientSize = new System.Drawing.Size(1200, 692);
             this.Controls.Add(this.panelHUD);
             this.Controls.Add(this.panelButoane);
