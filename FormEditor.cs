@@ -591,10 +591,15 @@ namespace proiect_poo
         {
             if (_decizieCurenta == null) return;
             int sel = cmbCondTip.SelectedIndex;
+
             if (sel == 0) { _decizieCurenta.Condition = null; return; }
 
             if (sel == 1)
             {
+                // Dacă nu e nimic selectat, alege primul status disponibil
+                if (cmbCondProp.SelectedIndex < 0 && cmbCondProp.Items.Count > 0)
+                    cmbCondProp.SelectedIndex = 0;
+
                 _decizieCurenta.Condition = new ComparisonNode
                 {
                     Property = cmbCondProp.SelectedItem?.ToString() ?? "",

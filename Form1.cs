@@ -65,6 +65,25 @@ namespace proiect_poo
                 _gameState.CurrentBlockId = blocCurent.Id;
             }
 
+            // ----- AUTOMAT PENTRU BLOCUL DE VERIFICARE A SFÂRȘITULUI -----
+            if (blocCurent.Id == "block_endings_check")
+            {
+                var deciziiValide = blocCurent.Decisions
+                    .Where(d => d.Condition == null || d.Condition.Evaluate(_gameState.ToateStatusurile))
+                    .ToList();
+
+                string idEndingAles;
+                if (deciziiValide.Count > 0)
+                    idEndingAles = deciziiValide.First().TargetBlock; // prima decizie validă
+                else
+                    idEndingAles = blocCurent.NextBlock ?? "ending_default"; // fallback
+
+                _gameState.CurrentBlockId = idEndingAles;
+                ActualizeazaInterfata(); // reapelează direct cu noul bloc (va fi un ending)
+                return;
+            }
+            // -------------------------------------------------------------
+
             string tipBloc = blocCurent.BlockType ?? "normal";
 
             if (tipBloc == "ending" || tipBloc == "default_ending")
@@ -177,6 +196,7 @@ namespace proiect_poo
 
                 btn.Click += (s, e) =>
                 {
+                    //MessageBox.Show("Buton apasat, merg la: " + decizieCapturata.TargetBlock);
                     _gameState.AplicaEfecteDecizie(decizieCapturata, decisionsRequired);
                     ActualizeazaInterfata();
                 };
