@@ -56,7 +56,20 @@ namespace proiect_poo
             var blocCurent = _gameState.GasesteBlocDupaId(_gameState.CurrentBlockId);
             if (blocCurent == null)
             {
-                MessageBox.Show($"Eroare: Blocul '{_gameState.CurrentBlockId}' nu există în JSON.");
+                blocCurent = _gameState.GasesteEndingPotrivit();
+                if (blocCurent == null)
+                {
+                    MessageBox.Show($"Eroare: Blocul '{_gameState.CurrentBlockId}' nu există și nu există niciun ending.");
+                    return;
+                }
+                _gameState.CurrentBlockId = blocCurent.Id;
+            }
+
+            string tipBloc = blocCurent.BlockType ?? "normal";
+
+            if (tipBloc == "ending" || tipBloc == "default_ending")
+            {
+                AfiseazaEcranEnding(blocCurent);
                 return;
             }
 
@@ -68,6 +81,34 @@ namespace proiect_poo
             _textAnimation.StartAnimation(blocCurent.Text);
             createStatusHud();
             createButtons(blocCurent);
+        }
+
+        private void AfiseazaEcranEnding(BlockJsonDefinition blocEnding)
+        {
+            // Titlu fereastră
+            this.Text = _gameState.PovesteIncarcata.Title + " — SFÂRȘIT";
+
+            // Oprește orice animație și afișează textul direct
+            _textAnimation.StartAnimation(blocEnding.Text);
+
+            // Golește butoanele și pune doar "Joacă din nou" și "Ieși"
+            panelButoane.Controls.Clear();
+            _tooltip.RemoveAll();
+
+            var btnReplay = BuildButton("▶  Joacă din nou", "Repornește jocul de la început.");
+            btnReplay.Click += (s, e) =>
+            {
+                _gameState.InitializareJoc(_gameState.PovesteIncarcata);
+                ActualizeazaInterfata();
+            };
+
+            var btnIesire = BuildButton("✕  Ieși", "Închide jocul.");
+            btnIesire.Click += (s, e) => this.Close();
+
+            panelButoane.Controls.Add(btnReplay);
+            panelButoane.Controls.Add(btnIesire);
+
+            createStatusHud(); // arată statusurile finale
         }
 
         // =====================================================================

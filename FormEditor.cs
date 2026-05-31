@@ -1017,7 +1017,7 @@ namespace proiect_poo
 
             lblBlockTypeTitlu = new Label { Location = new Point(210, 43), Size = new Size(55, 20), Text = "Tip Bloc:" };
             cmbBlockType = new ComboBox { Location = new Point(270, 40), Size = new Size(110, 22), DropDownStyle = ComboBoxStyle.DropDownList };
-            cmbBlockType.Items.AddRange(new object[] { "normal", "research" });
+            cmbBlockType.Items.AddRange(new object[] { "normal", "research", "ending", "default_ending" });
 
             lblNextBlockTitlu = new Label { Location = new Point(395, 43), Size = new Size(75, 20), Text = "Următorul ID:" };
             txtNextBlock = new TextBox { Location = new Point(475, 40), Size = new Size(130, 20) };

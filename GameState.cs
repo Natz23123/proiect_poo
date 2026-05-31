@@ -176,6 +176,29 @@ namespace proiect_poo
             return null;
         }
 
+        public BlockJsonDefinition GasesteEndingPotrivit()
+        {
+            if (PovesteIncarcata?.Days == null) return null;
+
+            var toateBlocurile = PovesteIncarcata.Days
+                .SelectMany(z => z.Blocks)
+                .ToList();
+
+            // Caută primul ending condițional care se potrivește
+            var endingConditionat = toateBlocurile
+                .Where(b => b.BlockType == "ending")
+                .FirstOrDefault(b =>
+                    b.Decisions != null &&
+                    b.Decisions.Count > 0 &&
+                    b.Decisions.All(d => d.Condition == null || d.Condition.Evaluate(ToateStatusurile)));
+
+            if (endingConditionat != null)
+                return endingConditionat;
+
+            // Fallback: default_ending
+            return toateBlocurile.FirstOrDefault(b => b.BlockType == "default_ending");
+        }
+
         public DayJsonDefinition ZiuaCurenta()
         {
             if (PovesteIncarcata?.Days == null) return null;
