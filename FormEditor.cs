@@ -9,6 +9,11 @@ namespace proiect_poo
 {
     public partial class FormEditor : Form
     {
+        private Label lblDecizieEfecteTitlu;
+        private ListBox lstDecizieEfecte;
+        private Button btnAdaugaEfectDecizie, btnStergeEfectDecizie;
+        private ComboBox cmbEfectDecizieProp, cmbEfectDecizieTip;
+        private NumericUpDown numEfectDecizieVal;
         // ── State ─────────────────────────────────────────────────────────────
         private StoryJsonDefinition _povesteCurenta;
         private string _caleFichierCurent = "";
@@ -75,10 +80,6 @@ namespace proiect_poo
         private Label lblCondCopilProp, lblCondCopilOp, lblCondCopilVal;
         private ComboBox cmbCondCopilProp, cmbCondCopilOp;
         private NumericUpDown numCondCopilVal;
-
-        // Efecte
-        private Label lblDecizieEfecteTitlu;
-        private TextBox txtDecizieEfecte;
 
         // ── Panel editare IDEE ────────────────────────────────────────────────
         private Panel panelEditareIdee;
@@ -400,6 +401,60 @@ namespace proiect_poo
             btnStergeDecizie.Enabled = true;
         }
 
+        private void ActualizeazaListaEfecteDecizie()
+        {
+            lstDecizieEfecte.Items.Clear();
+            if (_decizieCurenta?.Effects == null) return;
+            foreach (var ef in _decizieCurenta.Effects)
+                lstDecizieEfecte.Items.Add(ef);
+        }
+
+        private void SetareStareEditareEfecteDecizie(bool activa)
+        {
+            lstDecizieEfecte.Enabled = activa;
+            btnAdaugaEfectDecizie.Enabled = activa;
+            btnStergeEfectDecizie.Enabled = activa;
+            cmbEfectDecizieProp.Enabled = activa;
+            cmbEfectDecizieTip.Enabled = activa;
+            numEfectDecizieVal.Enabled = activa;
+        }
+
+        private void btnAdaugaEfectDecizie_Click(object sender, EventArgs e)
+        {
+            if (_decizieCurenta == null) return;
+            string prop = cmbEfectDecizieProp.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(prop))
+            {
+                MessageBox.Show("Selectează o proprietate!");
+                return;
+            }
+            int val = (int)numEfectDecizieVal.Value;
+            string tip = cmbEfectDecizieTip.SelectedItem?.ToString() ?? "ADD";
+
+            var efect = new EffectJsonDefinition
+            {
+                Type = tip,
+                Property = prop,
+                Value = val
+            };
+            _decizieCurenta.Effects.Add(efect);
+            ActualizeazaListaEfecteDecizie();
+        }
+
+        private void btnStergeEfectDecizie_Click(object sender, EventArgs e)
+        {
+            if (_decizieCurenta == null || lstDecizieEfecte.SelectedItem == null) return;
+            var efect = lstDecizieEfecte.SelectedItem as EffectJsonDefinition;
+            if (efect != null)
+            {
+                _decizieCurenta.Effects.Remove(efect);
+                ActualizeazaListaEfecteDecizie();
+            }
+        }
+
+        private void cmbEfectDecizieProp_SelectedIndexChanged(object sender, EventArgs e) { }
+        private void numEfectDecizieVal_ValueChanged(object sender, EventArgs e) { }
+
         // ── Decizii ───────────────────────────────────────────────────────────
         private void ActualizeazaListaDecizii()
         {
@@ -423,8 +478,9 @@ namespace proiect_poo
 
             txtDecizieText.Text = _decizieCurenta.Text;
             txtDecizieDestinatie.Text = _decizieCurenta.TargetBlock;
-            txtDecizieEfecte.Text = JsonConvert.SerializeObject(
-                _decizieCurenta.Effects ?? new List<EffectJsonDefinition>(), Formatting.Indented);
+            ActualizeazaListaEfecteDecizie();
+            PopuleazaComboProprietati(cmbEfectDecizieProp);
+
 
             ActualizeazaComboIdei();
             string uid = _decizieCurenta.UnlocksIdeaId;
@@ -437,17 +493,18 @@ namespace proiect_poo
 
             _seIncarcaDatele = false;
             SetareStareEditareDecizie(true);
+            SetareStareEditareEfecteDecizie(true);
         }
 
         private void SetareStareEditareDecizie(bool activa)
         {
             txtDecizieText.Enabled = activa;
             txtDecizieDestinatie.Enabled = activa;
-            txtDecizieEfecte.Enabled = activa;
             cmbUnlocksIdee.Enabled = activa;
             cmbCondTip.Enabled = activa;
             btnDecizieSus.Enabled = activa;
             btnDecizieJos.Enabled = activa;
+            SetareStareEditareEfecteDecizie(activa);
             if (!activa) AscundeControleCond();
         }
 
@@ -456,22 +513,6 @@ namespace proiect_poo
             if (_seIncarcaDatele || _decizieCurenta == null) return;
             _decizieCurenta.Text = txtDecizieText.Text;
             _seIncarcaDatele = true; ActualizeazaListaDecizii(); _seIncarcaDatele = false;
-        }
-        private void txtDecizieDestinatie_TextChanged(object sender, EventArgs e)
-        {
-            if (_seIncarcaDatele || _decizieCurenta == null) return;
-            _decizieCurenta.TargetBlock = txtDecizieDestinatie.Text;
-            _seIncarcaDatele = true; ActualizeazaListaDecizii(); _seIncarcaDatele = false;
-        }
-        private void txtDecizieEfecte_TextChanged(object sender, EventArgs e)
-        {
-            if (_seIncarcaDatele || _decizieCurenta == null) return;
-            try
-            {
-                var ef = JsonConvert.DeserializeObject<List<EffectJsonDefinition>>(txtDecizieEfecte.Text);
-                if (ef != null) _decizieCurenta.Effects = ef;
-            }
-            catch { }
         }
 
         private void btnAdaugaDecizie_Click(object sender, EventArgs e)
@@ -1020,8 +1061,6 @@ namespace proiect_poo
             lblUnlocksIdee = new Label { Location = new Point(rx, 295), Size = new Size(95, 20), Text = "Deblochează:" };
             cmbUnlocksIdee = new ComboBox { Location = new Point(rx + 100, 292), Size = new Size(250, 22), DropDownStyle = ComboBoxStyle.DropDownList };
 
-            txtDecizieText.TextChanged += txtDecizieText_TextChanged;
-            txtDecizieDestinatie.TextChanged += txtDecizieDestinatie_TextChanged;
             cmbUnlocksIdee.SelectedIndexChanged += cmbUnlocksIdee_SelectedIndexChanged;
 
             var lblCond = new Label
@@ -1068,17 +1107,26 @@ namespace proiect_poo
             cmbCondCopilOp.SelectedIndexChanged += cmbCondCopilOp_SelectedIndexChanged;
             numCondCopilVal.ValueChanged += numCondCopilVal_ValueChanged;
 
-            lblDecizieEfecteTitlu = new Label { Location = new Point(rx, 492), Size = new Size(300, 15), Text = "Efecte (JSON):" };
-            txtDecizieEfecte = new TextBox
-            {
-                Location = new Point(rx, 510),
-                Size = new Size(540, 165),
-                Multiline = true,
-                ScrollBars = ScrollBars.Vertical,
-                Font = new Font("Consolas", 9)
-            };
-            txtDecizieEfecte.TextChanged += txtDecizieEfecte_TextChanged;
+            // ══════════════════ EFECTE DECIZIE (NOU) ═══════════════════════════
+            lblDecizieEfecteTitlu = new Label { Location = new Point(rx, 492), Size = new Size(300, 15), Text = "Efecte:" };
+            lstDecizieEfecte = new ListBox { Location = new Point(rx, 510), Size = new Size(250, 120) };
+            btnAdaugaEfectDecizie = new Button { Location = new Point(rx + 260, 510), Size = new Size(80, 24), Text = "➕ Adaugă" };
+            btnStergeEfectDecizie = new Button { Location = new Point(rx + 260, 538), Size = new Size(80, 24), Text = "❌ Șterge" };
 
+            cmbEfectDecizieTip = new ComboBox { Location = new Point(rx, 640), Size = new Size(80, 22), DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbEfectDecizieTip.Items.AddRange(new object[] { "ADD", "SET", "MULTIPLY" });
+            cmbEfectDecizieTip.SelectedIndex = 0;
+
+            cmbEfectDecizieProp = new ComboBox { Location = new Point(rx + 90, 640), Size = new Size(130, 22), DropDownStyle = ComboBoxStyle.DropDownList };
+            numEfectDecizieVal = new NumericUpDown { Location = new Point(rx + 230, 640), Size = new Size(70, 22), Minimum = -200, Maximum = 200 };
+
+            btnAdaugaEfectDecizie.Click += btnAdaugaEfectDecizie_Click;
+            btnStergeEfectDecizie.Click += btnStergeEfectDecizie_Click;
+            cmbEfectDecizieProp.SelectedIndexChanged += cmbEfectDecizieProp_SelectedIndexChanged;
+            numEfectDecizieVal.ValueChanged += numEfectDecizieVal_ValueChanged;
+            // ════════════════════════════════════════════════════════════════════
+
+            // Adăugarea controalelor în panelEditareBloc (mai întâi cele existente, apoi cele noi)
             panelEditareBloc.Controls.Add(lblBlocTitlu);
             panelEditareBloc.Controls.Add(lblBlockIdTitlu);
             panelEditareBloc.Controls.Add(txtBlockId);
@@ -1119,8 +1167,15 @@ namespace proiect_poo
             panelEditareBloc.Controls.Add(cmbCondCopilOp);
             panelEditareBloc.Controls.Add(lblCondCopilVal);
             panelEditareBloc.Controls.Add(numCondCopilVal);
+
+            // Adăugăm noile controale pentru efecte
             panelEditareBloc.Controls.Add(lblDecizieEfecteTitlu);
-            panelEditareBloc.Controls.Add(txtDecizieEfecte);
+            panelEditareBloc.Controls.Add(lstDecizieEfecte);
+            panelEditareBloc.Controls.Add(btnAdaugaEfectDecizie);
+            panelEditareBloc.Controls.Add(btnStergeEfectDecizie);
+            panelEditareBloc.Controls.Add(cmbEfectDecizieTip);
+            panelEditareBloc.Controls.Add(cmbEfectDecizieProp);
+            panelEditareBloc.Controls.Add(numEfectDecizieVal);
 
             // ── Panel editare IDEE ──
             panelEditareIdee = new Panel { Location = new Point(248, 55), Size = new Size(810, 690), BorderStyle = BorderStyle.FixedSingle };
@@ -1181,7 +1236,6 @@ namespace proiect_poo
             cmbNivelEfectProp.SelectedIndexChanged += cmbNivelEfectProp_SelectedIndexChanged;
             numNivelEfectVal.ValueChanged += numNivelEfectVal_ValueChanged;
 
-            // Evenimentele pentru noile controale
             txtNivelDesc.TextChanged += txtNivelDesc_TextChanged;
             numNivelNr.ValueChanged += numNivelNr_ValueChanged;
 
@@ -1202,8 +1256,6 @@ namespace proiect_poo
             panelEditareIdee.Controls.Add(btnStergeNivelEfect);
             panelEditareIdee.Controls.Add(cmbNivelEfectProp);
             panelEditareIdee.Controls.Add(numNivelEfectVal);
-
-            // Adăugăm și controalele noi
             panelEditareIdee.Controls.Add(lblNivelNrTitlu);
             panelEditareIdee.Controls.Add(numNivelNr);
             panelEditareIdee.Controls.Add(lblNivelDescTitlu);

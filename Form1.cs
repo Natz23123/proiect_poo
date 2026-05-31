@@ -137,6 +137,7 @@ namespace proiect_poo
                 btn.Click += (s, e) =>
                 {
                     _gameState.AplicaEfecteDecizie(decizieCapturata, decisionsRequired);
+                    _gameState.VerificaTriggerProprietati();
                     ActualizeazaInterfata();
                 };
                 panelButoane.Controls.Add(btn);
