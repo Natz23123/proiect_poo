@@ -232,25 +232,5 @@ namespace proiect_poo
             var status = ToateStatusurile.FirstOrDefault(s => s.Key == key);
             status?.Modifica(delta);
         }
-
-        public void VerificaTriggerProprietati()
-        {
-            foreach (var prop in PovesteIncarcata.Properties)
-            {
-                var status = ToateStatusurile.FirstOrDefault(s => s.Key == prop.Key);
-                if (status == null) continue;
-
-                if (!string.IsNullOrEmpty(prop.OnMaxBlock) && status.Valoare >= status.Max)
-                {
-                    CurrentBlockId = prop.OnMaxBlock;
-                    return;
-                }
-                if (!string.IsNullOrEmpty(prop.OnMinBlock) && status.Valoare <= status.Min)
-                {
-                    CurrentBlockId = prop.OnMinBlock;
-                    return;
-                }
-            }
-        }
     }
 }
