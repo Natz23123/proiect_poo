@@ -21,6 +21,9 @@ namespace proiect_poo
             lblTextHolder.ForeColor = Color.White;
             _textAnimation = new TextAnimation(lblTextHolder, 25);
             _gameState = new GameState();
+            _tooltip.OwnerDraw = true;
+            _tooltip.Draw += CustomToolTip_Draw;
+            _tooltip.Popup += CustomToolTip_Popup;
             IncarcaPovesteDinJson("default_story.json");
         }
 
@@ -381,6 +384,31 @@ namespace proiect_poo
         {
             if (_textAnimation.IsRunning)
                 _textAnimation.Skip();
+        }
+
+        private void CustomToolTip_Popup(object sender, PopupEventArgs e)
+        {
+            using (var font = new Font("Smallest Pixel-7", 12f, FontStyle.Regular))
+            {
+                var text = _tooltip.GetToolTip(e.AssociatedControl) ?? string.Empty;
+                var textSize = TextRenderer.MeasureText(text, font, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                e.ToolTipSize = new Size(textSize.Width + 15, textSize.Height + 15);
+            }
+        }
+
+        private void CustomToolTip_Draw(object sender, DrawToolTipEventArgs e)
+        {
+            using (var font = new Font("Smallest Pixel-7", 12f, FontStyle.Regular))
+            using (var borderPen = new Pen(Color.White))
+            using (var backBrush = new SolidBrush(Color.Black))
+            {
+                e.Graphics.FillRectangle(backBrush, e.Bounds);
+                var borderRect = new Rectangle(e.Bounds.X, e.Bounds.Y, e.Bounds.Width - 1, e.Bounds.Height - 1);
+                e.Graphics.DrawRectangle(borderPen, borderRect);
+
+                var textRect = new Rectangle(e.Bounds.X + 7, e.Bounds.Y + 7, e.Bounds.Width - 14, e.Bounds.Height - 14);
+                TextRenderer.DrawText(e.Graphics, e.ToolTipText, font, textRect, Color.White, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            }
         }
     }
 }
