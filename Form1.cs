@@ -16,6 +16,7 @@ namespace proiect_poo
         public Form1()
         {
             InitializeComponent();
+            lblTextHolder.ForeColor = Color.White;
             _textAnimation = new TextAnimation(lblTextHolder, 25);
             _gameState = new GameState();
             IncarcaPovesteDinJson("default_story.json");
@@ -82,11 +83,13 @@ namespace proiect_poo
                 Label lbl = new Label();
                 lbl.Text = $"{status.Nume}: {status.Valoare}";
                 lbl.AutoSize = true;
+                lbl.ForeColor = Color.White;
 
                 ProgressBar pb = new ProgressBar();
                 pb.Minimum = status.Min;
                 pb.Maximum = status.Max;
                 pb.Value = status.Valoare;
+                pb.ForeColor = Color.White;
 
                 bool isPrimary = index == 0;
                 lbl.Font = new Font("Segoe UI", isPrimary ? 12 : 10, FontStyle.Bold);
@@ -205,6 +208,7 @@ namespace proiect_poo
                 btn.Text = label;
                 btn.Size = new Size(400, 45);
                 btn.Font = new Font("Segoe UI", 9, FontStyle.Regular);
+                btn.ForeColor = Color.White;
                 _tooltip.SetToolTip(btn, tooltipText);
 
                 btn.Click += (s, e) =>
@@ -291,8 +295,27 @@ namespace proiect_poo
         {
             Button btn = new Button();
             btn.Text = text;
-            btn.Size = new Size(320, 45);
-            btn.Font = new Font("Segoe UI", 9, FontStyle.Regular);
+
+
+            btn.AutoSize = true;
+            btn.MinimumSize = new Size(340, 45);
+            //btn.MaximumSize = new Size(400, 0);
+            btn.Padding = new Padding(10, 5, 10, 5);
+            btn.TextAlign = ContentAlignment.MiddleLeft;
+
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Color.White;
+            btn.FlatAppearance.MouseOverBackColor = Color.White;
+
+            btn.BackColor = Color.Black;
+            btn.ForeColor = Color.White;
+            btn.Font = new Font("Smallest Pixel-7", 10, FontStyle.Regular);
+            btn.Cursor = Cursors.Hand;
+
+            btn.MouseEnter += (s, e) => btn.ForeColor = Color.Black;
+            btn.MouseLeave += (s, e) => btn.ForeColor = Color.White;
+
             _tooltip.SetToolTip(btn, tooltipText);
             return btn;
         }
