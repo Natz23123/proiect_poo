@@ -196,7 +196,7 @@ namespace proiect_poo
 
                 btn.Click += (s, e) =>
                 {
-                    //MessageBox.Show("Buton apasat, merg la: " + decizieCapturata.TargetBlock);
+                    // MessageBox.Show("Buton apasat, merg la: " + decizieCapturata.TargetBlock);
                     _gameState.AplicaEfecteDecizie(decizieCapturata, decisionsRequired);
                     ActualizeazaInterfata();
                 };
