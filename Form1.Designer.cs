@@ -35,35 +35,41 @@
             // 
             // lblTextHolder
             // 
-            this.lblTextHolder.Location = new System.Drawing.Point(566, 250);
+            this.lblTextHolder.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lblTextHolder.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTextHolder.Location = new System.Drawing.Point(9, 237);
             this.lblTextHolder.Name = "lblTextHolder";
-            this.lblTextHolder.Size = new System.Drawing.Size(222, 172);
+            this.lblTextHolder.Size = new System.Drawing.Size(818, 173);
             this.lblTextHolder.TabIndex = 0;
-            this.lblTextHolder.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.lblTextHolder.Click += new System.EventHandler(this.lblTextHolder_Click);
             // 
             // panelButoane
             // 
+            this.panelButoane.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelButoane.Location = new System.Drawing.Point(12, 13);
             this.panelButoane.Name = "panelButoane";
-            this.panelButoane.Size = new System.Drawing.Size(496, 409);
+            this.panelButoane.Size = new System.Drawing.Size(512, 202);
             this.panelButoane.TabIndex = 9;
             // 
             // panelHUD
             // 
-            this.panelHUD.Location = new System.Drawing.Point(633, 12);
+            this.panelHUD.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panelHUD.Location = new System.Drawing.Point(559, 12);
             this.panelHUD.Name = "panelHUD";
-            this.panelHUD.Size = new System.Drawing.Size(155, 203);
+            this.panelHUD.Size = new System.Drawing.Size(268, 204);
             this.panelHUD.TabIndex = 10;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.BackColor = System.Drawing.SystemColors.Desktop;
+            this.BackgroundImage = global::proiect_poo.Properties.Resources.scanlines_pixels_2;
+            this.ClientSize = new System.Drawing.Size(839, 450);
             this.Controls.Add(this.panelHUD);
             this.Controls.Add(this.panelButoane);
             this.Controls.Add(this.lblTextHolder);
+            this.ForeColor = System.Drawing.SystemColors.Control;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Form1";
