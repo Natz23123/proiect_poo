@@ -20,6 +20,7 @@ namespace proiect_poo
         private ResearchLevelJsonDefinition _nivelCurent;
         private ConditionNode _condChildCurent;
         private bool _seIncarcaDatele = false;
+        private ComboBox cmbStartBlock;
 
         // ── Controale toolbar ─────────────────────────────────────────────────
         private TextBox txtTitluPoveste;
@@ -162,6 +163,7 @@ namespace proiect_poo
             panelEditareIdee.Visible = false;
             _blocCurent = null; _ideeCurenta = null;
             txtTitluPoveste.Text = _povesteCurenta.Title;
+            ActualizeazaComboStartBlock(cmbStartBlock);
             ActualizeazaTreeView();
             ActualizeazaListaStatusuri();
         }
@@ -288,6 +290,8 @@ namespace proiect_poo
             treeViewStructura.Nodes.Add(nodIdei);
 
             treeViewStructura.ExpandAll();
+
+            ActualizeazaComboStartBlock(cmbStartBlock);
         }
 
         private void treeViewStructura_AfterSelect(object sender, TreeViewEventArgs e)
@@ -1370,6 +1374,19 @@ namespace proiect_poo
                 }
         }
 
+        private void ActualizeazaComboStartBlock(ComboBox cmb)
+        {
+            string sel = _povesteCurenta?.StartBlock;
+            cmb.Items.Clear();
+            foreach (var zi in _povesteCurenta?.Days ?? new List<DayJsonDefinition>())
+                foreach (var bloc in zi.Blocks ?? new List<BlockJsonDefinition>())
+                    if (!string.IsNullOrEmpty(bloc.Id))
+                        cmb.Items.Add(bloc.Id);
+            if (!string.IsNullOrEmpty(sel) && cmb.Items.Contains(sel))
+                cmb.SelectedItem = sel;
+            else if (cmb.Items.Count > 0)
+                cmb.SelectedIndex = 0;
+        }
         private void SelecteazaCombo(ComboBox cmb, string val)
         {
             if (cmb == null) return;
@@ -1420,9 +1437,26 @@ namespace proiect_poo
 
             // ── Toolbar ──
             btnCreazaNoua = new Button { Location = new Point(12, 12), Size = new Size(130, 30), Text = "➕ Poveste Nouă" };
-            lblTitluPoveste = new Label { Location = new Point(580, 17), Size = new Size(60, 20), Text = "Titlu:" };
-            txtTitluPoveste = new TextBox { Location = new Point(640, 14), Size = new Size(150, 20) };
+            lblTitluPoveste = new Label { Location = new Point(600, 17), Size = new Size(35, 20), Text = "Titlu:" };
+            txtTitluPoveste = new TextBox { Location = new Point(641, 14), Size = new Size(150, 20) };
             btnCreazaNoua.Click += btnCreazaNoua_Click;
+
+            var lblStartBlock = new Label { Location = new Point(420, 17), Size = new Size(65, 20), Text = "StartBlock:" };
+            cmbStartBlock = new ComboBox
+            {
+                Location = new Point(488, 14),
+                Size = new Size(100, 22),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+
+            cmbStartBlock.SelectedIndexChanged += (s, e) =>
+            {
+                if (_povesteCurenta != null && cmbStartBlock.SelectedItem != null)
+                    _povesteCurenta.StartBlock = cmbStartBlock.SelectedItem.ToString();
+            };
+
+            this.Controls.Add(lblStartBlock);
+            this.Controls.Add(cmbStartBlock);
 
             // ── Stânga — Statusuri ──
             lblStatusuriTitlu = new Label { Location = new Point(12, 55), Size = new Size(220, 18), Text = "📊 Statusuri:" };
