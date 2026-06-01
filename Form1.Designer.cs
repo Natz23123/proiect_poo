@@ -37,9 +37,9 @@
             // 
             this.lblTextHolder.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.lblTextHolder.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblTextHolder.Location = new System.Drawing.Point(12, 285);
+            this.lblTextHolder.Location = new System.Drawing.Point(12, 327);
             this.lblTextHolder.Name = "lblTextHolder";
-            this.lblTextHolder.Size = new System.Drawing.Size(818, 234);
+            this.lblTextHolder.Size = new System.Drawing.Size(818, 192);
             this.lblTextHolder.TabIndex = 0;
             this.lblTextHolder.Click += new System.EventHandler(this.lblTextHolder_Click);
             // 
@@ -48,7 +48,7 @@
             this.panelButoane.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelButoane.Location = new System.Drawing.Point(12, 13);
             this.panelButoane.Name = "panelButoane";
-            this.panelButoane.Size = new System.Drawing.Size(512, 252);
+            this.panelButoane.Size = new System.Drawing.Size(512, 295);
             this.panelButoane.TabIndex = 9;
             // 
             // panelHUD
@@ -56,7 +56,7 @@
             this.panelHUD.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelHUD.Location = new System.Drawing.Point(559, 12);
             this.panelHUD.Name = "panelHUD";
-            this.panelHUD.Size = new System.Drawing.Size(268, 253);
+            this.panelHUD.Size = new System.Drawing.Size(268, 296);
             this.panelHUD.TabIndex = 10;
             // 
             // Form1
