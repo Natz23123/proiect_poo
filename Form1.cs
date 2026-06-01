@@ -439,7 +439,7 @@ namespace proiect_poo
                     {
                         var original = IncarcaImagine(decizie.Icon);
                         if (original != null)
-                            icon = new Bitmap(original, new Size(40, 40));
+                            icon = new Bitmap(original, new Size(50, 50));
                         else
                             areIcon = false;
                     }
