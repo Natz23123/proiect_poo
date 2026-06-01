@@ -107,7 +107,6 @@ namespace proiect_poo
 
         // Imagini
 
-        private PictureBox pbImgBloc;
         private PictureBox pbIconDecizie;
 
         // ═════════════════════════════════════════════════════════════════════
@@ -227,11 +226,6 @@ namespace proiect_poo
 
         private void ElibereazaImagini()
         {
-            if (pbImgBloc?.Image != null)
-            {
-                pbImgBloc.Image.Dispose();
-                pbImgBloc.Image = null;
-            }
             if (pbIconDecizie?.Image != null)
             {
                 pbIconDecizie.Image.Dispose();
@@ -324,11 +318,6 @@ namespace proiect_poo
             if (tag is BlockJsonDefinition bloc)
             {
                 _blocCurent = bloc;
-                if (!string.IsNullOrEmpty(_blocCurent.BackgroundImage) && File.Exists(_blocCurent.BackgroundImage))
-                {
-                    try { pbImgBloc.Image = IncarcaImagineEditor(_blocCurent.BackgroundImage); } catch { pbImgBloc.Image = null; }
-                }
-                else pbImgBloc.Image = null;
                 _ideeCurenta = null;
                 panelEditareBloc.Visible = true;
                 panelEditareIdee.Visible = false;
@@ -1663,37 +1652,6 @@ namespace proiect_poo
             btnStergeEfectDecizie.Click += btnStergeEfectDecizie_Click;
             cmbEfectDecizieProp.SelectedIndexChanged += cmbEfectDecizieProp_SelectedIndexChanged;
             numEfectDecizieVal.ValueChanged += numEfectDecizieVal_ValueChanged;
-
-            // Imagine fundal pentru bloc
-            Button btnAlegeImgBloc = new Button { Location = new Point(10, 210), Size = new Size(130, 23), Text = "Imagine fundal bloc" };
-            Button btnStergeImgBloc = new Button { Location = new Point(145, 210), Size = new Size(80, 23), Text = "Șterge" };
-            pbImgBloc = new PictureBox { Location = new Point(230, 205), Size = new Size(40, 30), SizeMode = PictureBoxSizeMode.Zoom, BorderStyle = BorderStyle.FixedSingle };
-
-            btnAlegeImgBloc.Click += (s, ev) =>
-            {
-                if (_blocCurent == null) return;
-                using (var ofd = new OpenFileDialog { Filter = "Imagini (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp" })
-                {
-                    if (ofd.ShowDialog() == DialogResult.OK)
-                    {
-                        _blocCurent.BackgroundImage = ofd.FileName;
-                        try { pbImgBloc.Image = IncarcaImagineEditor(ofd.FileName); } catch { }
-                    }
-                }
-            };
-            btnStergeImgBloc.Click += (s, ev) =>
-            {
-                if (_blocCurent == null) return;
-                _blocCurent.BackgroundImage = null;
-                pbImgBloc.Image = null;
-            };
-
-            pbImgBloc.Click += (s, ev) => DeschidePreviewImagine(pbImgBloc.Image);
-            pbIconDecizie.Click += (s, ev) => DeschidePreviewImagine(pbIconDecizie.Image);
-
-            panelEditareBloc.Controls.Add(btnAlegeImgBloc);
-            panelEditareBloc.Controls.Add(btnStergeImgBloc);
-            panelEditareBloc.Controls.Add(pbImgBloc);
 
             // Adăugăm controalele la panou
             panelEditareBloc.Controls.Add(lblDecizieEfecteTitlu);

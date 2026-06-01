@@ -185,14 +185,6 @@ namespace proiect_poo
                     if (zi.Blocks == null) continue;
                     foreach (var bloc in zi.Blocks)
                     {
-                        if (!string.IsNullOrEmpty(bloc.BackgroundImage))
-                        {
-                            string fullPath = Path.Combine(imagesDir, bloc.BackgroundImage);
-                            bloc.BackgroundImage = File.Exists(fullPath) ? fullPath : null;
-                            if (bloc.BackgroundImage != null)
-                                IncarcaImagine(bloc.BackgroundImage); // încarcă în cache
-                        }
-
                         if (bloc.Decisions != null)
                         {
                             foreach (var dec in bloc.Decisions)
@@ -257,24 +249,6 @@ namespace proiect_poo
                 }
                 _gameState.CurrentBlockId = blocCurent.Id;
             }
-
-
-            // Fundal specific blocului
-            if (!string.IsNullOrEmpty(blocCurent.BackgroundImage) && File.Exists(blocCurent.BackgroundImage))
-            {
-                _blockBackgroundPictureBox.Image = IncarcaImagine(blocCurent.BackgroundImage);
-                _blockBackgroundPictureBox.Visible = true;
-                _blockBackgroundPictureBox.Location = new Point(0, 0);
-                _blockBackgroundPictureBox.Size = this.ClientSize;
-                _blockBackgroundPictureBox.SendToBack();
-            }
-            else
-            {
-                _blockBackgroundPictureBox.Visible = false;
-                _blockBackgroundPictureBox.Image = null;
-            }
-
-            this.Refresh();
 
             // Asigură-te că textul și panourile sunt deasupra
             lblTextHolder.BringToFront();
@@ -439,7 +413,7 @@ namespace proiect_poo
                     {
                         var original = IncarcaImagine(decizie.Icon);
                         if (original != null)
-                            icon = new Bitmap(original, new Size(50, 50));
+                            icon = new Bitmap(original, new Size(125, 125));
                         else
                             areIcon = false;
                     }
@@ -447,7 +421,7 @@ namespace proiect_poo
                 }
 
                 Button btn = new Button();
-                btn.Size = new Size(200, 200);
+                btn.Size = new Size(125, 125);
                 btn.BackColor = Color.Black;
                 btn.FlatStyle = FlatStyle.Flat;
                 btn.FlatAppearance.BorderSize = 1;
@@ -494,7 +468,7 @@ namespace proiect_poo
                     string nextBlockR = blocCurent.NextBlock;
 
                     Button btnResearch = new Button();
-                    btnResearch.Size = new Size(50, 50);
+                    btnResearch.Size = new Size(125, 125);
                     btnResearch.BackColor = Color.Black;
                     btnResearch.FlatStyle = FlatStyle.Flat;
                     btnResearch.FlatAppearance.BorderSize = 1;
@@ -524,7 +498,7 @@ namespace proiect_poo
                     string nextBlockI = blocCurent.NextBlock;
 
                     Button btnImpl = new Button();
-                    btnImpl.Size = new Size(50, 50);
+                    btnImpl.Size = new Size(200, 200);
                     btnImpl.BackColor = Color.Black;
                     btnImpl.FlatStyle = FlatStyle.Flat;
                     btnImpl.FlatAppearance.BorderSize = 1;
