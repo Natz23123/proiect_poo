@@ -854,7 +854,7 @@ namespace proiect_poo
         private void lblTextHolder_Paint(object sender, PaintEventArgs e)
         {
             Color borderColor = Color.White;
-            int borderThickness = 5;
+            int borderThickness = 3;
             ControlPaint.DrawBorder(e.Graphics, lblTextHolder.ClientRectangle,
                 borderColor, borderThickness, ButtonBorderStyle.Solid, // Left
                 borderColor, borderThickness, ButtonBorderStyle.Solid, // Top
@@ -865,7 +865,7 @@ namespace proiect_poo
         private void panelHUD_Paint(object sender, PaintEventArgs e)
         {
             Color borderColor = Color.White;
-            int borderThickness = 5;
+            int borderThickness = 3;
             ControlPaint.DrawBorder(e.Graphics, panelHUD.ClientRectangle,
                 borderColor, borderThickness, ButtonBorderStyle.Solid, // Left
                 borderColor, borderThickness, ButtonBorderStyle.Solid, // Top
