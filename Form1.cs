@@ -452,67 +452,130 @@ namespace proiect_poo
             // Buton agregat RESEARCH
             if (blockType == "research")
             {
-                bool areIdeiDeResearch = _gameState.IdeaResearchLevels.Keys
-                    .Any(id => _gameState.GetNextResearchLevel(id) != null);
+                int decisionsReqR = blocCurent.DecisionsRequired;
+                string nextBlockR = blocCurent.NextBlock;
 
-                if (areIdeiDeResearch)
+                // ── 1. BUTONUL RESEARCH ──────────────────────────────────────
+                Button btnResearch = new Button();
+                btnResearch.Size = new Size(128, 128);
+                btnResearch.BackColor = Color.Black;
+                btnResearch.FlatStyle = FlatStyle.Flat;
+                btnResearch.FlatAppearance.BorderSize = 1;
+                btnResearch.FlatAppearance.BorderColor = Color.White;
+                btnResearch.FlatAppearance.MouseOverBackColor = Color.White;
+                btnResearch.Cursor = Cursors.Hand;
+                btnResearch.Margin = new Padding(0, 0, 5, 5);
+
+                // Folosim BaseDirectory ca să fim siguri că găsește folderul indiferent de starea aplicației
+                string caleResearchIcon = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "research.png");
+                Image iconResearch = null;
+                bool areResearchIcon = false;
+
+                if (File.Exists(caleResearchIcon))
                 {
-                    int decisionsReqR = blocCurent.DecisionsRequired;
-                    string nextBlockR = blocCurent.NextBlock;
-
-                    Button btnResearch = new Button();
-                    btnResearch.Size = new Size(128, 128);
-                    btnResearch.BackColor = Color.Black;
-                    btnResearch.FlatStyle = FlatStyle.Flat;
-                    btnResearch.FlatAppearance.BorderSize = 1;
-                    btnResearch.FlatAppearance.BorderColor = Color.White;
-                    btnResearch.FlatAppearance.MouseOverBackColor = Color.White;
-                    btnResearch.Cursor = Cursors.Hand;
-                    btnResearch.Margin = new Padding(0, 0, 5, 5);
-                    btnResearch.Text = "🔬";
-                    btnResearch.ForeColor = Color.White;
-                    btnResearch.Font = new Font("Smallest Pixel-7", 24, FontStyle.Bold);
-                    btnResearch.MouseEnter += (s, e) => btnResearch.ForeColor = Color.Black;
-                    btnResearch.MouseLeave += (s, e) => btnResearch.ForeColor = Color.White;
-                    _tooltip.SetToolTip(btnResearch, "Dă research la o idee");
-
-                    btnResearch.Click += (s, e) =>
+                    try
                     {
-                        var optiuni = BuildResearchOptions(decisionsReqR, nextBlockR);
-                        ShowIdeaPickerDialog("Research — alege o idee", optiuni);
-                    };
-                    panelButoane.Controls.Add(btnResearch);
+                        string cacheKey = caleResearchIcon + "_128";
+                        if (!_imageCache.ContainsKey(cacheKey))
+                        {
+                            using (var original = Image.FromFile(caleResearchIcon))
+                            {
+                                _imageCache[cacheKey] = new Bitmap(original, new Size(128, 128));
+                            }
+                        }
+                        iconResearch = _imageCache[cacheKey];
+                        areResearchIcon = (iconResearch != null);
+                    }
+                    catch { areResearchIcon = false; }
                 }
 
-                bool areIdeiDeImplementat = _gameState.IdeaResearchLevels.Any(kv => kv.Value >= 1);
-                if (areIdeiDeImplementat)
+                if (areResearchIcon && iconResearch != null)
                 {
-                    int decisionsReqI = blocCurent.DecisionsRequired;
-                    string nextBlockI = blocCurent.NextBlock;
+                    btnResearch.Image = iconResearch;
+                    btnResearch.ImageAlign = ContentAlignment.MiddleCenter;
+                    btnResearch.Text = "";
+                }
+                else
+                {
+                    // Fallback cu text dacă fișierul nu e copiat în folderul de build
+                    btnResearch.Text = "🔬";
+                    btnResearch.ForeColor = Color.White;
+                    btnResearch.Font = new Font("Smallest Pixel-7", 40, FontStyle.Bold);
+                }
 
-                    Button btnImpl = new Button();
-                    btnImpl.Size = new Size(128, 128);
-                    btnImpl.BackColor = Color.Black;
-                    btnImpl.FlatStyle = FlatStyle.Flat;
-                    btnImpl.FlatAppearance.BorderSize = 1;
-                    btnImpl.FlatAppearance.BorderColor = Color.White;
-                    btnImpl.FlatAppearance.MouseOverBackColor = Color.White;
-                    btnImpl.Cursor = Cursors.Hand;
-                    btnImpl.Margin = new Padding(0, 0, 5, 5);
+                _tooltip.SetToolTip(btnResearch, "Dă research la o idee");
+
+                btnResearch.Click += (s, e) =>
+                {
+                    var optiuni = BuildResearchOptions(decisionsReqR, nextBlockR);
+                    ShowIdeaPickerDialog("Research — alege o idee", optiuni);
+                };
+
+                btnResearch.MouseEnter += (s, e) => { if (areResearchIcon) btnResearch.Image = iconResearch; btnResearch.ForeColor = Color.Black; };
+                btnResearch.MouseLeave += (s, e) => btnResearch.ForeColor = Color.White;
+
+                panelButoane.Controls.Add(btnResearch);
+
+
+                // ── 2. BUTONUL IMPLEMENT ─────────────────────────────────────
+                Button btnImpl = new Button();
+                btnImpl.Size = new Size(128, 128);
+                btnImpl.BackColor = Color.Black;
+                btnImpl.FlatStyle = FlatStyle.Flat;
+                btnImpl.FlatAppearance.BorderSize = 1;
+                btnImpl.FlatAppearance.BorderColor = Color.White;
+                btnImpl.FlatAppearance.MouseOverBackColor = Color.White;
+                btnImpl.Cursor = Cursors.Hand;
+                btnImpl.Margin = new Padding(0, 0, 5, 5);
+
+                string caleImplementIcon = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "ideea_implement.png");
+                Image iconImplement = null;
+                bool areImplementIcon = false;
+
+                if (File.Exists(caleImplementIcon))
+                {
+                    try
+                    {
+                        string cacheKey = caleImplementIcon + "_128";
+                        if (!_imageCache.ContainsKey(cacheKey))
+                        {
+                            using (var original = Image.FromFile(caleImplementIcon))
+                            {
+                                _imageCache[cacheKey] = new Bitmap(original, new Size(128, 128));
+                            }
+                        }
+                        iconImplement = _imageCache[cacheKey];
+                        areImplementIcon = (iconImplement != null);
+                    }
+                    catch { areImplementIcon = false; }
+                }
+
+                if (areImplementIcon && iconImplement != null)
+                {
+                    btnImpl.Image = iconImplement;
+                    btnImpl.ImageAlign = ContentAlignment.MiddleCenter;
+                    btnImpl.Text = "";
+                }
+                else
+                {
+                    // Fallback cu text dacă fișierul nu e copiat în folderul de build
                     btnImpl.Text = "⚙︎";
                     btnImpl.ForeColor = Color.White;
                     btnImpl.Font = new Font("Smallest Pixel-7", 24, FontStyle.Bold);
-                    btnImpl.MouseEnter += (s, e) => btnImpl.ForeColor = Color.Black;
-                    btnImpl.MouseLeave += (s, e) => btnImpl.ForeColor = Color.White;
-                    _tooltip.SetToolTip(btnImpl, "Implementează o idee");
-
-                    btnImpl.Click += (s, e) =>
-                    {
-                        var optiuni = BuildImplementOptions(decisionsReqI, nextBlockI);
-                        ShowIdeaPickerDialog("Implementare — alege o idee", optiuni);
-                    };
-                    panelButoane.Controls.Add(btnImpl);
                 }
+
+                _tooltip.SetToolTip(btnImpl, "Implementează o idee");
+
+                btnImpl.Click += (s, e) =>
+                {
+                    var optiuni = BuildImplementOptions(decisionsReqR, nextBlockR);
+                    ShowIdeaPickerDialog("Implementare — alege o idee", optiuni);
+                };
+
+                btnImpl.MouseEnter += (s, e) => { if (areImplementIcon) btnImpl.Image = iconImplement; btnImpl.ForeColor = Color.Black; };
+                btnImpl.MouseLeave += (s, e) => btnImpl.ForeColor = Color.White;
+
+                panelButoane.Controls.Add(btnImpl);
             }
         }
         
