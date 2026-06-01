@@ -218,6 +218,27 @@ namespace proiect_poo
             MessageBox.Show("Arhiva ZIP a fost creată!", "Succes");
         }
 
+        private Image IncarcaImagineEditor(string cale)
+        {
+            if (string.IsNullOrEmpty(cale) || !File.Exists(cale)) return null;
+            using (var tmp = new Bitmap(cale))
+                return new Bitmap(tmp); // copiază în memorie și eliberează fișierul
+        }
+
+        private void ElibereazaImagini()
+        {
+            if (pbImgBloc?.Image != null)
+            {
+                pbImgBloc.Image.Dispose();
+                pbImgBloc.Image = null;
+            }
+            if (pbIconDecizie?.Image != null)
+            {
+                pbIconDecizie.Image.Dispose();
+                pbIconDecizie.Image = null;
+            }
+        }
+
         //import zip
 
         private void btnIncarcaZip_Click(object sender, EventArgs e)
@@ -225,6 +246,8 @@ namespace proiect_poo
             using (var ofd = new OpenFileDialog { Filter = "Arhivă ZIP (*.zip)|*.zip" })
             {
                 if (ofd.ShowDialog() != DialogResult.OK) return;
+
+                ElibereazaImagini();
 
                 string tempRoot = Path.Combine(Path.GetTempPath(), "poveste_import");
                 if (Directory.Exists(tempRoot)) Directory.Delete(tempRoot, true);
@@ -303,7 +326,7 @@ namespace proiect_poo
                 _blocCurent = bloc;
                 if (!string.IsNullOrEmpty(_blocCurent.BackgroundImage) && File.Exists(_blocCurent.BackgroundImage))
                 {
-                    try { pbImgBloc.Image = Image.FromFile(_blocCurent.BackgroundImage); } catch { pbImgBloc.Image = null; }
+                    try { pbImgBloc.Image = IncarcaImagineEditor(_blocCurent.BackgroundImage); } catch { pbImgBloc.Image = null; }
                 }
                 else pbImgBloc.Image = null;
                 _ideeCurenta = null;
@@ -571,7 +594,7 @@ namespace proiect_poo
             // Actualizează previzualizarea iconiței
             if (!string.IsNullOrEmpty(_decizieCurenta.Icon) && File.Exists(_decizieCurenta.Icon))
             {
-                try { pbIconDecizie.Image = Image.FromFile(_decizieCurenta.Icon); }
+                try { pbIconDecizie.Image = IncarcaImagineEditor(_decizieCurenta.Icon); }
                 catch { pbIconDecizie.Image = null; }
             }
             else
@@ -1558,7 +1581,7 @@ namespace proiect_poo
                     if (ofd.ShowDialog() == DialogResult.OK)
                     {
                         _decizieCurenta.Icon = ofd.FileName;
-                        try { pbIconDecizie.Image = Image.FromFile(ofd.FileName); } catch { }
+                        try { pbIconDecizie.Image = IncarcaImagineEditor(ofd.FileName); } catch { }
                     }
                 }
             };
@@ -1654,7 +1677,7 @@ namespace proiect_poo
                     if (ofd.ShowDialog() == DialogResult.OK)
                     {
                         _blocCurent.BackgroundImage = ofd.FileName;
-                        try { pbImgBloc.Image = Image.FromFile(ofd.FileName); } catch { }
+                        try { pbImgBloc.Image = IncarcaImagineEditor(ofd.FileName); } catch { }
                     }
                 }
             };
@@ -1812,7 +1835,7 @@ namespace proiect_poo
 
             // ── Form ──
             this.SuspendLayout();
-            this.ClientSize = new Size(1070, 700);
+            this.ClientSize = new Size(1070, 750);
             this.Text = "Story Editor";
 
             this.Controls.Add(btnCreazaNoua);

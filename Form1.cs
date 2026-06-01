@@ -562,20 +562,31 @@ namespace proiect_poo
             popup.FormBorderStyle = FormBorderStyle.FixedDialog;
             popup.MaximizeBox = false;
             popup.MinimizeBox = false;
+            popup.BackColor = Color.Black;
+            popup.ForeColor = Color.White;
 
             FlowLayoutPanel panel = new FlowLayoutPanel();
             panel.Dock = DockStyle.Fill;
             panel.FlowDirection = FlowDirection.TopDown;
             panel.Padding = new Padding(10);
             panel.AutoScroll = true;
+            panel.BackColor = Color.Black;
 
             foreach (var (label, tooltipText, actiune) in optiuni)
             {
                 Button btn = new Button();
                 btn.Text = label;
                 btn.Size = new Size(400, 45);
-                btn.Font = new Font("Segoe UI", 9, FontStyle.Regular);
+                btn.Font = new Font("Smallest Pixel-7", 10, FontStyle.Regular);
                 btn.ForeColor = Color.White;
+                btn.BackColor = Color.Black;
+                btn.FlatStyle = FlatStyle.Flat;
+                btn.FlatAppearance.BorderSize = 1;
+                btn.FlatAppearance.BorderColor = Color.White;
+                btn.FlatAppearance.MouseOverBackColor = Color.White;
+                btn.Cursor = Cursors.Hand;
+                btn.MouseEnter += (s, e) => btn.ForeColor = Color.Black;
+                btn.MouseLeave += (s, e) => btn.ForeColor = Color.White;
                 _tooltip.SetToolTip(btn, tooltipText);
 
                 btn.Click += (s, e) =>
