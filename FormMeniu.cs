@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 using System.Media;
+using System.IO;
 
 namespace proiect_poo
 {
@@ -14,6 +15,8 @@ namespace proiect_poo
         private Timer timerBlinkingArrow;
         private System.ComponentModel.IContainer components;
         private Button btnIesire;
+        private readonly SoundPlayer _hoverSoundPlayer;
+        private readonly SoundPlayer _clickSoundPlayer;
 
         // ========================================================
         // LINIILE ADAUGATE: Declarăm butoanele noi ca să fie recunoscute în context
@@ -26,6 +29,20 @@ namespace proiect_poo
         {
             InitializeComponent();
             ConfigureazaSubmeniuPoveste();
+
+            string soundEffectsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Sound Effects");
+            string hoverSoundPath = Path.Combine(soundEffectsPath, "hover.wav");
+            string clickSoundPath = Path.Combine(soundEffectsPath, "click.wav");
+            if (File.Exists(hoverSoundPath))
+            {
+                _hoverSoundPlayer = new SoundPlayer(hoverSoundPath);
+                _hoverSoundPlayer.LoadAsync();
+            }
+            if (File.Exists(clickSoundPath))
+            {
+                _clickSoundPlayer = new SoundPlayer(clickSoundPath);
+                _clickSoundPlayer.LoadAsync();
+            }
         }
 
         private void ConfigureazaSubmeniuPoveste()
@@ -52,7 +69,11 @@ namespace proiect_poo
             btn.AutoSize = model.AutoSize;
             btn.AutoSizeMode = model.AutoSizeMode;
             btn.Visible = false; // Ascunse la început
-            btn.Click += clickEvent;
+            btn.Click += (s, e) =>
+            {
+                PlayClickSound();
+                clickEvent(s, e);
+            };
             btn.MouseEnter += FormMeniu_MouseEnter; // Sunet retro + indicator automatisme
             return btn;
         }
@@ -60,6 +81,7 @@ namespace proiect_poo
         // Butonul: PORNEȘTE JOCUL
         private void btnJoaca_Click(object sender, EventArgs e)
         {
+            PlayClickSound();
             // Ascundem meniul principal
             btnJoaca.Visible = false;
             btnEditor.Visible = false;
@@ -128,6 +150,7 @@ namespace proiect_poo
         // Butonul: DESCHIDE EDITOR
         private void btnEditor_Click(object sender, EventArgs e)
         {
+            PlayClickSound();
             this.Hide();
             FormEditor fereastraEditor = new FormEditor();
             fereastraEditor.ShowDialog();
@@ -137,6 +160,7 @@ namespace proiect_poo
         // Butonul: IEȘIRE
         private void btnIesire_Click(object sender, EventArgs e)
         {
+            PlayClickSound();
             Application.Exit();
         }
 
@@ -276,9 +300,18 @@ namespace proiect_poo
             lblArrowHover.Top = hoveredButton.Top + 5;
             lblArrowHover.Visible = true;
             timerBlinkingArrow.Stop();
-            SoundPlayer hoverSound = new SoundPlayer(Properties.Resources.menu_hover);
-            hoverSound.Play();
+            PlayHoverSound();
             timerBlinkingArrow.Start();
+        }
+
+        private void PlayHoverSound()
+        {
+            _hoverSoundPlayer?.Play();
+        }
+
+        private void PlayClickSound()
+        {
+            _clickSoundPlayer?.Play();
         }
     }
 }

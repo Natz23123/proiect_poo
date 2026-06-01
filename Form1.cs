@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Media;
 using System.Linq;
 using System.Windows.Forms;
 using System.IO.Compression;
@@ -15,6 +16,8 @@ namespace proiect_poo
         private ToolTip _tooltip = new ToolTip();
         private string _tempExtractFolder;
         private string _calePoveste;
+        private readonly SoundPlayer _hoverSoundPlayer;
+        private readonly SoundPlayer _clickSoundPlayer;
 
         private Dictionary<string, Image> _imageCache = new Dictionary<string, Image>();
 
@@ -46,6 +49,20 @@ namespace proiect_poo
             panelHUD.BorderStyle = BorderStyle.None;
             panelButoane.BorderStyle = BorderStyle.None;
             lblTextHolder.BorderStyle = BorderStyle.None;
+
+            string soundEffectsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Sound Effects");
+            string hoverSoundPath = Path.Combine(soundEffectsPath, "hover.wav");
+            string clickSoundPath = Path.Combine(soundEffectsPath, "click.wav");
+            if (File.Exists(hoverSoundPath))
+            {
+                _hoverSoundPlayer = new SoundPlayer(hoverSoundPath);
+                _hoverSoundPlayer.LoadAsync();
+            }
+            if (File.Exists(clickSoundPath))
+            {
+                _clickSoundPlayer = new SoundPlayer(clickSoundPath);
+                _clickSoundPlayer.LoadAsync();
+            }
 
             // ----- LOGICA NOUĂ DE ÎNCĂRCARE -----
             string povesteDeIncarcat = calePovesteCustom;
@@ -439,11 +456,17 @@ namespace proiect_poo
 
                 btn.Click += (s, e) =>
                 {
+                    PlayClickSound();
                     _gameState.AplicaEfecteDecizie(decizieCapturata, decisionsRequired);
                     ActualizeazaInterfata();
                 };
 
-                btn.MouseEnter += (s, e) => { if (areIcon) btn.Image = icon; btn.ForeColor = Color.Black; };
+                btn.MouseEnter += (s, e) =>
+                {
+                    PlayHoverSound();
+                    if (areIcon) btn.Image = icon;
+                    btn.ForeColor = Color.Black;
+                };
                 btn.MouseLeave += (s, e) => btn.ForeColor = Color.White;
 
                 panelButoane.Controls.Add(btn);
@@ -507,11 +530,17 @@ namespace proiect_poo
 
                 btnResearch.Click += (s, e) =>
                 {
+                    PlayClickSound();
                     var optiuni = BuildResearchOptions(decisionsReqR, nextBlockR);
                     ShowIdeaPickerDialog("Research — alege o idee", optiuni);
                 };
 
-                btnResearch.MouseEnter += (s, e) => { if (areResearchIcon) btnResearch.Image = iconResearch; btnResearch.ForeColor = Color.Black; };
+                btnResearch.MouseEnter += (s, e) =>
+                {
+                    PlayHoverSound();
+                    if (areResearchIcon) btnResearch.Image = iconResearch;
+                    btnResearch.ForeColor = Color.Black;
+                };
                 btnResearch.MouseLeave += (s, e) => btnResearch.ForeColor = Color.White;
 
                 panelButoane.Controls.Add(btnResearch);
@@ -568,11 +597,17 @@ namespace proiect_poo
 
                 btnImpl.Click += (s, e) =>
                 {
+                    PlayClickSound();
                     var optiuni = BuildImplementOptions(decisionsReqR, nextBlockR);
                     ShowIdeaPickerDialog("Implementare — alege o idee", optiuni);
                 };
 
-                btnImpl.MouseEnter += (s, e) => { if (areImplementIcon) btnImpl.Image = iconImplement; btnImpl.ForeColor = Color.Black; };
+                btnImpl.MouseEnter += (s, e) =>
+                {
+                    PlayHoverSound();
+                    if (areImplementIcon) btnImpl.Image = iconImplement;
+                    btnImpl.ForeColor = Color.Black;
+                };
                 btnImpl.MouseLeave += (s, e) => btnImpl.ForeColor = Color.White;
 
                 panelButoane.Controls.Add(btnImpl);
@@ -615,12 +650,17 @@ namespace proiect_poo
                 btn.FlatAppearance.BorderColor = Color.White;
                 btn.FlatAppearance.MouseOverBackColor = Color.White;
                 btn.Cursor = Cursors.Hand;
-                btn.MouseEnter += (s, e) => btn.ForeColor = Color.Black;
+                btn.MouseEnter += (s, e) =>
+                {
+                    PlayHoverSound();
+                    btn.ForeColor = Color.Black;
+                };
                 btn.MouseLeave += (s, e) => btn.ForeColor = Color.White;
                 _tooltip.SetToolTip(btn, tooltipText);
 
                 btn.Click += (s, e) =>
                 {
+                    PlayClickSound();
                     popup.Close();
                     actiune();
                 };
@@ -752,11 +792,26 @@ namespace proiect_poo
             btn.Font = new Font("Smallest Pixel-7", 10, FontStyle.Regular);
             btn.Cursor = Cursors.Hand;
 
-            btn.MouseEnter += (s, e) => btn.ForeColor = Color.Black;
+            btn.MouseEnter += (s, e) =>
+            {
+                PlayHoverSound();
+                btn.ForeColor = Color.Black;
+            };
             btn.MouseLeave += (s, e) => btn.ForeColor = Color.White;
+            btn.Click += (s, e) => PlayClickSound();
 
             _tooltip.SetToolTip(btn, tooltipText);
             return btn;
+        }
+
+        private void PlayHoverSound()
+        {
+            _hoverSoundPlayer?.Play();
+        }
+
+        private void PlayClickSound()
+        {
+            _clickSoundPlayer?.Play();
         }
 
         private string BuildNormalTooltip(DecisionJsonDefinition decizie)
