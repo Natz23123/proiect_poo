@@ -381,20 +381,30 @@ namespace proiect_poo
                 Image icon = null;
                 if (areIcon)
                 {
-                    try { icon = new Bitmap(Image.FromFile(decizie.Icon), new Size(32, 32)); }
+                    try { icon = new Bitmap(Image.FromFile(decizie.Icon), new Size(40, 40)); }
                     catch { areIcon = false; }
                 }
 
-                Button btn = BuildButton(decizie.Text, BuildNormalTooltip(decizie));
+                Button btn = new Button();
+                btn.Size = new Size(50, 50);
+                btn.BackColor = Color.Black;
+                btn.FlatStyle = FlatStyle.Flat;
+                btn.FlatAppearance.BorderSize = 1;
+                btn.FlatAppearance.BorderColor = Color.White;
+                btn.FlatAppearance.MouseOverBackColor = Color.White;
+                btn.Cursor = Cursors.Hand;
+                btn.Margin = new Padding(0, 0, 5, 5);
 
                 if (areIcon && icon != null)
                 {
                     btn.Image = icon;
-                    btn.ImageAlign = ContentAlignment.MiddleRight;
-                    btn.TextAlign = ContentAlignment.MiddleLeft;
-                    btn.TextImageRelation = TextImageRelation.TextBeforeImage;
-                    btn.Padding = new Padding(10, 5, 7, 10);
+                    btn.ImageAlign = ContentAlignment.MiddleCenter;
+                    btn.Text = "";
                 }
+                // fără icon = buton negru cu bordură albă, fără text
+
+                string tooltipText = decizie.Text + "\n\n" + BuildNormalTooltip(decizie);
+                _tooltip.SetToolTip(btn, tooltipText);
 
                 var decizieCapturata = decizie;
                 int decisionsRequired = blocCurent.DecisionsRequired;
@@ -405,7 +415,10 @@ namespace proiect_poo
                     ActualizeazaInterfata();
                 };
 
-                panelButoane.Controls.Add(btn); // direct în panel, fără FlowLayoutPanel intermediar
+                btn.MouseEnter += (s, e) => { if (areIcon) btn.Image = icon; btn.ForeColor = Color.Black; };
+                btn.MouseLeave += (s, e) => btn.ForeColor = Color.White;
+
+                panelButoane.Controls.Add(btn);
             }
 
             // Buton agregat RESEARCH
