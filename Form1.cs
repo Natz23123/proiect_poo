@@ -404,7 +404,7 @@ namespace proiect_poo
                     {
                         var original = IncarcaImagine(decizie.Icon);
                         if (original != null)
-                            icon = new Bitmap(original, new Size(125, 125));
+                            icon = new Bitmap(original, new Size(128, 128));
                         else
                             areIcon = false;
                     }
@@ -412,7 +412,7 @@ namespace proiect_poo
                 }
 
                 Button btn = new Button();
-                btn.Size = new Size(125, 125);
+                btn.Size = new Size(128, 128);
                 btn.BackColor = Color.Black;
                 btn.FlatStyle = FlatStyle.Flat;
                 btn.FlatAppearance.BorderSize = 1;
@@ -459,7 +459,7 @@ namespace proiect_poo
                     string nextBlockR = blocCurent.NextBlock;
 
                     Button btnResearch = new Button();
-                    btnResearch.Size = new Size(125, 125);
+                    btnResearch.Size = new Size(128, 128);
                     btnResearch.BackColor = Color.Black;
                     btnResearch.FlatStyle = FlatStyle.Flat;
                     btnResearch.FlatAppearance.BorderSize = 1;
@@ -489,7 +489,7 @@ namespace proiect_poo
                     string nextBlockI = blocCurent.NextBlock;
 
                     Button btnImpl = new Button();
-                    btnImpl.Size = new Size(125, 125);
+                    btnImpl.Size = new Size(128, 128);
                     btnImpl.BackColor = Color.Black;
                     btnImpl.FlatStyle = FlatStyle.Flat;
                     btnImpl.FlatAppearance.BorderSize = 1;

@@ -48,7 +48,7 @@
             this.panelButoane.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panelButoane.Location = new System.Drawing.Point(12, 13);
             this.panelButoane.Name = "panelButoane";
-            this.panelButoane.Size = new System.Drawing.Size(353, 295);
+            this.panelButoane.Size = new System.Drawing.Size(360, 295);
             this.panelButoane.TabIndex = 9;
             this.panelButoane.Paint += new System.Windows.Forms.PaintEventHandler(this.panelButoane_Paint);
             // 
