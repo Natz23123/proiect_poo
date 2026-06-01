@@ -15,7 +15,6 @@ namespace proiect_poo
         private ToolTip _tooltip = new ToolTip();
         private string _tempExtractFolder;
         private string _calePoveste;
-        private PictureBox _blockBackgroundPictureBox; // fundalul specific blocului
 
         private Dictionary<string, Image> _imageCache = new Dictionary<string, Image>();
 
@@ -25,14 +24,6 @@ namespace proiect_poo
 
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
             this.UpdateStyles();
-
-            _blockBackgroundPictureBox = new PictureBox
-            {
-                SizeMode = PictureBoxSizeMode.StretchImage,
-                Visible = false,
-                BackColor = Color.Black
-            };
-            this.Controls.Add(_blockBackgroundPictureBox);
 
             //_blockBackgroundPictureBox.Controls.Add(panelHUD);
             //_blockBackgroundPictureBox.Controls.Add(panelButoane);
@@ -289,23 +280,23 @@ namespace proiect_poo
             createStatusHud();
             createButtons(blocCurent);
         }
-        protected override void OnPaintBackground(PaintEventArgs e) {
-            //MessageBox.Show($"bg poveste: '{_gameState?.PovesteIncarcata?.BackgroundImage}'\nblock bg: '{(_blockBackgroundPictureBox?.Visible == true ? "visible" : "hidden")}'");
-            if (_blockBackgroundPictureBox != null && _blockBackgroundPictureBox.Visible && _blockBackgroundPictureBox.Image != null)
-                e.Graphics.DrawImage(_blockBackgroundPictureBox.Image, 0, 0, this.ClientSize.Width, this.ClientSize.Height);
-            else if (_gameState?.PovesteIncarcata != null &&
-                     !string.IsNullOrEmpty(_gameState.PovesteIncarcata.BackgroundImage) &&
-                     File.Exists(_gameState.PovesteIncarcata.BackgroundImage))
-            {
-                var img = IncarcaImagine(_gameState.PovesteIncarcata.BackgroundImage);
-                if (img != null)
-                    e.Graphics.DrawImage(img, 0, 0, this.ClientSize.Width, this.ClientSize.Height);
-                else
-                    e.Graphics.Clear(Color.Black);
-            }
-            else
-                e.Graphics.Clear(Color.Black);
-        }
+        //protected override void OnPaintBackground(PaintEventArgs e) {
+        //    //MessageBox.Show($"bg poveste: '{_gameState?.PovesteIncarcata?.BackgroundImage}'\nblock bg: '{(_blockBackgroundPictureBox?.Visible == true ? "visible" : "hidden")}'");
+        //    if (_blockBackgroundPictureBox != null && _blockBackgroundPictureBox.Visible && _blockBackgroundPictureBox.Image != null)
+        //        e.Graphics.DrawImage(_blockBackgroundPictureBox.Image, 0, 0, this.ClientSize.Width, this.ClientSize.Height);
+        //    else if (_gameState?.PovesteIncarcata != null &&
+        //             !string.IsNullOrEmpty(_gameState.PovesteIncarcata.BackgroundImage) &&
+        //             File.Exists(_gameState.PovesteIncarcata.BackgroundImage))
+        //    {
+        //        var img = IncarcaImagine(_gameState.PovesteIncarcata.BackgroundImage);
+        //        if (img != null)
+        //            e.Graphics.DrawImage(img, 0, 0, this.ClientSize.Width, this.ClientSize.Height);
+        //        else
+        //            e.Graphics.Clear(Color.Black);
+        //    }
+        //    else
+        //        e.Graphics.Clear(Color.Black);
+        //}
 
         private void AfiseazaEcranEnding(BlockJsonDefinition blocEnding)
         {
@@ -498,7 +489,7 @@ namespace proiect_poo
                     string nextBlockI = blocCurent.NextBlock;
 
                     Button btnImpl = new Button();
-                    btnImpl.Size = new Size(200, 200);
+                    btnImpl.Size = new Size(125, 125);
                     btnImpl.BackColor = Color.Black;
                     btnImpl.FlatStyle = FlatStyle.Flat;
                     btnImpl.FlatAppearance.BorderSize = 1;
