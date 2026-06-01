@@ -147,6 +147,16 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\ascii-art-text.png" />
+    <None Include="Assets\ideea_implement.png" />
+    <None Include="Assets\pixil-frame-0 %2814%29.png" />
+    <None Include="Assets\pixil-frame-0 %2813%29.png" />
+    <None Include="Assets\pixil-frame-0 %2812%29.png" />
+    <None Include="Assets\pixil-frame-0 %2811%29.png" />
+    <None Include="Assets\pixil-frame-0 %2810%29.png" />
+    <None Include="Assets\pixil-frame-0 %289%29.png" />
+    <None Include="Assets\pixil-frame-0 %288%29.png" />
+    <None Include="Assets\pixil-frame-0 %287%29.png" />
+    <None Include="Assets\meters_background.png" />
     <None Include="Assets\scanlines_pixels_2.png" />
     <None Include="Assets\scan_line_pixels.png" />
     <None Include="Assets\title.png" />
