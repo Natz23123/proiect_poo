@@ -138,6 +138,16 @@ namespace proiect_poo
                     }
                     _calePoveste = _tempExtractFolder;
                     _gameState.InitializareJoc(JsonManager.IncarcaPoveste(jsonPath));
+                    // Validare la încărcare
+                    var erori = ValidareRapida(_gameState.PovesteIncarcata);
+                    if (erori.Count > 0)
+                    {
+                        string mesaj = "⚠️ Povestea are probleme:\n\n";
+                        foreach (var e in erori)
+                            mesaj += "• " + e + "\n";
+                        mesaj += "\nJocul va porni, dar pot apărea erori.";
+                        MessageBox.Show(mesaj, "Avertisment", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
                 }
                 else // JSON obișnuit
                 {
@@ -199,6 +209,31 @@ namespace proiect_poo
                     }
                 }
             }
+        }
+
+        private List<string> ValidareRapida(StoryJsonDefinition poveste)
+        {
+            var erori = new List<string>();
+            if (poveste == null) { erori.Add("Povestea e null."); return erori; }
+
+            if (string.IsNullOrEmpty(poveste.StartBlock))
+                erori.Add("Nu e definit startBlock.");
+
+            var toateIdurile = poveste.Days?
+                .SelectMany(z => z.Blocks ?? new List<BlockJsonDefinition>())
+                .Select(b => b.Id)
+                .ToHashSet() ?? new HashSet<string>();
+
+            if (!string.IsNullOrEmpty(poveste.StartBlock) && !toateIdurile.Contains(poveste.StartBlock))
+                erori.Add($"StartBlock '{poveste.StartBlock}' nu există.");
+
+            if (poveste.Days == null || poveste.Days.Count == 0)
+                erori.Add("Povestea nu are nicio zi definită.");
+
+            if (poveste.Properties == null || poveste.Properties.Count == 0)
+                erori.Add("Povestea nu are proprietăți definite.");
+
+            return erori;
         }
 
         private Image IncarcaImagine(string cale)
