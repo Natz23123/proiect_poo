@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Windows.Forms;
-using Newtonsoft.Json;
 
 namespace proiect_poo
 {
@@ -22,7 +24,7 @@ namespace proiect_poo
         // ── Controale toolbar ─────────────────────────────────────────────────
         private TextBox txtTitluPoveste;
         private Label lblTitluPoveste;
-        private Button btnCreazaNoua, btnIncarcaExistenta, btnSalveaza;
+        private Button btnCreazaNoua;
 
         // ── Stânga – Statusuri ────────────────────────────────────────────────
         private Label lblStatusuriTitlu;
@@ -78,7 +80,11 @@ namespace proiect_poo
 
         // Efecte
         private Label lblDecizieEfecteTitlu;
-        private TextBox txtDecizieEfecte;
+
+        private ListBox lstDecizieEfecte;
+        private Button btnAdaugaEfectDecizie, btnStergeEfectDecizie;
+        private ComboBox cmbEfectDecizieProp, cmbEfectDecizieTip;
+        private NumericUpDown numEfectDecizieVal;
 
         // ── Panel editare IDEE ────────────────────────────────────────────────
         private Panel panelEditareIdee;
@@ -98,6 +104,14 @@ namespace proiect_poo
         private NumericUpDown numNivelEfectVal;
         private TextBox txtNivelDesc;
 
+        // Imagini
+        private Label lblBackgroundImage;
+        private Button btnAlegeBackground, btnStergeBackground;
+        private PictureBox pbBackgroundPreview;
+
+        private PictureBox pbImgBloc;
+        private PictureBox pbIconDecizie;
+
         // ═════════════════════════════════════════════════════════════════════
         public FormEditor()
         {
@@ -110,12 +124,13 @@ namespace proiect_poo
         private void SetareStareEditare(bool activa)
         {
             foreach (Control c in new Control[] {
-                txtTitluPoveste, lstStatusuri, txtStatusNume,
-                btnAdaugaStatus, btnStergeStatus, btnStatusSus, btnStatusJos,
-                treeViewStructura, btnAdaugaZi, btnStergeZi,
-                btnAdaugaBloc, btnBlocSus, btnBlocJos, btnSalveaza,
-                btnAdaugaIdee, btnStergeIdee })
-                c.Enabled = activa;
+            txtTitluPoveste, lstStatusuri, txtStatusNume,
+            btnAdaugaStatus, btnStergeStatus, btnStatusSus, btnStatusJos,
+            treeViewStructura, btnAdaugaZi, btnStergeZi,
+            btnAdaugaBloc, btnBlocSus, btnBlocJos,
+            btnAdaugaIdee, btnStergeIdee,
+            btnAlegeBackground, btnStergeBackground })  // ← adăugate
+            c.Enabled = activa;
         }
 
         // ── JSON I/O ──────────────────────────────────────────────────────────
@@ -144,40 +159,6 @@ namespace proiect_poo
             AfiseazaWorkspace();
         }
 
-        private void btnIncarcaExistenta_Click(object sender, EventArgs e)
-        {
-            using (var ofd = new OpenFileDialog { Filter = "JSON (*.json)|*.json" })
-            {
-                if (ofd.ShowDialog() != DialogResult.OK) return;
-                try
-                {
-                    _povesteCurenta = JsonManager.IncarcaPoveste(ofd.FileName);
-                    _caleFichierCurent = ofd.FileName;
-                    AfiseazaWorkspace();
-                }
-                catch (Exception ex) { MessageBox.Show("Eroare: " + ex.Message); }
-            }
-        }
-
-        private void btnSalveaza_Click(object sender, EventArgs e)
-        {
-            _povesteCurenta.Title = txtTitluPoveste.Text;
-            if (string.IsNullOrEmpty(_caleFichierCurent))
-            {
-                using (var sfd = new SaveFileDialog { Filter = "JSON (*.json)|*.json" })
-                {
-                    if (sfd.ShowDialog() != DialogResult.OK) return;
-                    _caleFichierCurent = sfd.FileName;
-                }
-            }
-            try
-            {
-                JsonManager.SalveazaPoveste(_caleFichierCurent, _povesteCurenta);
-                MessageBox.Show("Salvat!");
-            }
-            catch (Exception ex) { MessageBox.Show("Eroare la salvare: " + ex.Message); }
-        }
-
         private void AfiseazaWorkspace()
         {
             SetareStareEditare(true);
@@ -187,6 +168,103 @@ namespace proiect_poo
             txtTitluPoveste.Text = _povesteCurenta.Title;
             ActualizeazaTreeView();
             ActualizeazaListaStatusuri();
+            ActualizeazaBackgroundPreview();
+        }
+
+        // export zip
+        private void btnExportaZip_Click(object sender, EventArgs e)
+        {
+            if (_povesteCurenta == null) return;
+
+            string tempRoot = Path.Combine(Path.GetTempPath(), "poveste_export");
+            if (Directory.Exists(tempRoot)) Directory.Delete(tempRoot, true);
+            Directory.CreateDirectory(tempRoot);
+            string tempImagini = Path.Combine(tempRoot, "imagini");
+            Directory.CreateDirectory(tempImagini);
+
+            var povesteTemp = ClonarePoveste();
+
+            // Copiază imaginea de fundal a poveștii
+            if (!string.IsNullOrEmpty(povesteTemp.BackgroundImage))
+                povesteTemp.BackgroundImage = CopiazaImagine(povesteTemp.BackgroundImage, tempImagini);
+
+            // Copiază imaginile blocurilor și iconițele deciziilor
+            foreach (var zi in povesteTemp.Days)
+            {
+                foreach (var bloc in zi.Blocks)
+                {
+                    if (!string.IsNullOrEmpty(bloc.BackgroundImage))
+                        bloc.BackgroundImage = CopiazaImagine(bloc.BackgroundImage, tempImagini);
+
+                    if (bloc.Decisions != null)
+                    {
+                        foreach (var dec in bloc.Decisions)
+                        {
+                            if (!string.IsNullOrEmpty(dec.Icon))
+                                dec.Icon = CopiazaImagine(dec.Icon, tempImagini);
+                        }
+                    }
+                }
+            }
+
+            string jsonPath = Path.Combine(tempRoot, "story.json");
+            JsonManager.SalveazaPoveste(jsonPath, povesteTemp);
+
+            using (var sfd = new SaveFileDialog { Filter = "Arhivă ZIP (*.zip)|*.zip" })
+            {
+                if (sfd.ShowDialog() != DialogResult.OK) return;
+                if (File.Exists(sfd.FileName)) File.Delete(sfd.FileName);
+                ZipFile.CreateFromDirectory(tempRoot, sfd.FileName);
+            }
+
+            Directory.Delete(tempRoot, true);
+            MessageBox.Show("Arhiva ZIP a fost creată!", "Succes");
+        }
+
+        //import zip
+
+        private void btnIncarcaZip_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog { Filter = "Arhivă ZIP (*.zip)|*.zip" })
+            {
+                if (ofd.ShowDialog() != DialogResult.OK) return;
+
+                string tempRoot = Path.Combine(Path.GetTempPath(), "poveste_import");
+                if (Directory.Exists(tempRoot)) Directory.Delete(tempRoot, true);
+                Directory.CreateDirectory(tempRoot);
+
+                ZipFile.ExtractToDirectory(ofd.FileName, tempRoot);
+
+                string jsonPath = Path.Combine(tempRoot, "story.json");
+                if (!File.Exists(jsonPath))
+                {
+                    MessageBox.Show("Arhiva nu conține story.json!", "Eroare");
+                    return;
+                }
+
+                _povesteCurenta = JsonManager.IncarcaPoveste(jsonPath);
+                _caleFichierCurent = ofd.FileName; // sau memorezi folderul temp
+
+                // Rezolvă căile imaginilor: adaugă prefixul folderului temp/imagini/
+                string imagesDir = Path.Combine(tempRoot, "imagini");
+                if (Directory.Exists(imagesDir))
+                {
+                    if (!string.IsNullOrEmpty(_povesteCurenta.BackgroundImage))
+                        _povesteCurenta.BackgroundImage = Path.Combine(imagesDir, _povesteCurenta.BackgroundImage);
+                    foreach (var zi in _povesteCurenta.Days)
+                        foreach (var bloc in zi.Blocks)
+                        {
+                            if (!string.IsNullOrEmpty(bloc.BackgroundImage))
+                                bloc.BackgroundImage = Path.Combine(imagesDir, bloc.BackgroundImage);
+                            if (bloc.Decisions != null)
+                                foreach (var dec in bloc.Decisions)
+                                    if (!string.IsNullOrEmpty(dec.Icon))
+                                        dec.Icon = Path.Combine(imagesDir, dec.Icon);
+                        }
+                }
+
+                AfiseazaWorkspace();
+            }
         }
 
         // ── TreeView ──────────────────────────────────────────────────────────
@@ -223,7 +301,13 @@ namespace proiect_poo
 
             if (tag is BlockJsonDefinition bloc)
             {
-                _blocCurent = bloc; _ideeCurenta = null;
+                _blocCurent = bloc;
+                if (!string.IsNullOrEmpty(_blocCurent.BackgroundImage) && File.Exists(_blocCurent.BackgroundImage))
+                {
+                    try { pbImgBloc.Image = Image.FromFile(_blocCurent.BackgroundImage); } catch { pbImgBloc.Image = null; }
+                }
+                else pbImgBloc.Image = null;
+                _ideeCurenta = null;
                 panelEditareBloc.Visible = true;
                 panelEditareIdee.Visible = false;
                 _seIncarcaDatele = true;
@@ -270,6 +354,81 @@ namespace proiect_poo
             panelEditareBloc.Visible = false;
             panelEditareIdee.Visible = false;
             _blocCurent = null; _ideeCurenta = null;
+        }
+
+        // --Efecte decizie
+
+        private void ActualizeazaListaEfecteDecizie()
+        {
+            lstDecizieEfecte.Items.Clear();
+            if (_decizieCurenta?.Effects == null) return;
+            foreach (var ef in _decizieCurenta.Effects)
+                lstDecizieEfecte.Items.Add(ef);
+        }
+
+        private void SetareStareEditareEfecteDecizie(bool activa)
+        {
+            lstDecizieEfecte.Enabled = activa;
+            btnAdaugaEfectDecizie.Enabled = activa;
+            btnStergeEfectDecizie.Enabled = activa;
+            cmbEfectDecizieProp.Enabled = activa;
+            cmbEfectDecizieTip.Enabled = activa;
+            numEfectDecizieVal.Enabled = activa;
+        }
+
+        private void btnAdaugaEfectDecizie_Click(object sender, EventArgs e)
+        {
+            if (_decizieCurenta == null) return;
+            string prop = cmbEfectDecizieProp.SelectedItem?.ToString();
+            if (string.IsNullOrEmpty(prop))
+            {
+                MessageBox.Show("Selectează o proprietate!");
+                return;
+            }
+            int val = (int)numEfectDecizieVal.Value;
+            string tip = cmbEfectDecizieTip.SelectedItem?.ToString() ?? "ADD";
+
+            var efect = new EffectJsonDefinition
+            {
+                Type = tip,
+                Property = prop,
+                Value = val
+            };
+            _decizieCurenta.Effects.Add(efect);
+            ActualizeazaListaEfecteDecizie();
+        }
+
+        private void btnStergeEfectDecizie_Click(object sender, EventArgs e)
+        {
+            if (_decizieCurenta == null || lstDecizieEfecte.SelectedItem == null) return;
+            var efect = lstDecizieEfecte.SelectedItem as EffectJsonDefinition;
+            if (efect != null)
+            {
+                _decizieCurenta.Effects.Remove(efect);
+                ActualizeazaListaEfecteDecizie();
+            }
+        }
+
+        private void cmbEfectDecizieProp_SelectedIndexChanged(object sender, EventArgs e) { }
+        private void numEfectDecizieVal_ValueChanged(object sender, EventArgs e) { }
+
+        private void ActualizeazaBackgroundPreview()
+        {
+            if (!string.IsNullOrEmpty(_povesteCurenta?.BackgroundImage) && File.Exists(_povesteCurenta.BackgroundImage))
+            {
+                try
+                {
+                    pbBackgroundPreview.Image = Image.FromFile(_povesteCurenta.BackgroundImage);
+                }
+                catch
+                {
+                    pbBackgroundPreview.Image = null;
+                }
+            }
+            else
+            {
+                pbBackgroundPreview.Image = null;
+            }
         }
 
         // ── Statusuri ─────────────────────────────────────────────────────────
@@ -416,15 +575,25 @@ namespace proiect_poo
         {
             int idx = lstDecizii.SelectedIndex;
             if (idx < 0 || _blocCurent?.Decisions == null || idx >= _blocCurent.Decisions.Count)
-            { _decizieCurenta = null; SetareStareEditareDecizie(false); return; }
+            { 
+                _decizieCurenta = null;
+
+                if (!string.IsNullOrEmpty(_decizieCurenta.Icon) && File.Exists(_decizieCurenta.Icon))
+                {
+                    try { pbIconDecizie.Image = Image.FromFile(_decizieCurenta.Icon); } catch { pbIconDecizie.Image = null; }
+                }
+                else pbIconDecizie.Image = null;
+
+                SetareStareEditareDecizie(false); return; 
+            }
 
             _decizieCurenta = _blocCurent.Decisions[idx];
             _seIncarcaDatele = true;
 
             txtDecizieText.Text = _decizieCurenta.Text;
             txtDecizieDestinatie.Text = _decizieCurenta.TargetBlock;
-            txtDecizieEfecte.Text = JsonConvert.SerializeObject(
-                _decizieCurenta.Effects ?? new List<EffectJsonDefinition>(), Formatting.Indented);
+            ActualizeazaListaEfecteDecizie();
+            PopuleazaComboProprietati(cmbEfectDecizieProp);
 
             ActualizeazaComboIdei();
             string uid = _decizieCurenta.UnlocksIdeaId;
@@ -443,7 +612,7 @@ namespace proiect_poo
         {
             txtDecizieText.Enabled = activa;
             txtDecizieDestinatie.Enabled = activa;
-            txtDecizieEfecte.Enabled = activa;
+            SetareStareEditareEfecteDecizie(activa);
             cmbUnlocksIdee.Enabled = activa;
             cmbCondTip.Enabled = activa;
             btnDecizieSus.Enabled = activa;
@@ -463,16 +632,7 @@ namespace proiect_poo
             _decizieCurenta.TargetBlock = txtDecizieDestinatie.Text;
             _seIncarcaDatele = true; ActualizeazaListaDecizii(); _seIncarcaDatele = false;
         }
-        private void txtDecizieEfecte_TextChanged(object sender, EventArgs e)
-        {
-            if (_seIncarcaDatele || _decizieCurenta == null) return;
-            try
-            {
-                var ef = JsonConvert.DeserializeObject<List<EffectJsonDefinition>>(txtDecizieEfecte.Text);
-                if (ef != null) _decizieCurenta.Effects = ef;
-            }
-            catch { }
-        }
+
 
         private void btnAdaugaDecizie_Click(object sender, EventArgs e)
         {
@@ -872,6 +1032,345 @@ namespace proiect_poo
             _seIncarcaDatele = false;
         }
 
+        //validare poveste
+
+        private void btnValideaza_Click(object sender, EventArgs e)
+        {
+            var erori = ValideazaPovestea();
+            if (erori.Count == 0)
+            {
+                MessageBox.Show("✅ Povestea este validă! Nu s-au găsit probleme.", "Validare", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                string mesaj = "🔴 Au fost găsite următoarele probleme:\n\n";
+                foreach (var eroare in erori)
+                    mesaj += "• " + eroare + "\n";
+
+                MessageBox.Show(mesaj, "Validare - Probleme găsite", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private StoryJsonDefinition ClonarePoveste()
+        {
+            // Serializează și deserializează pentru o clonare completă
+            string json = JsonConvert.SerializeObject(_povesteCurenta);
+            return JsonConvert.DeserializeObject<StoryJsonDefinition>(json);
+        }
+
+        private List<string> ValideazaPovestea()
+        {
+            var erori = new List<string>();
+            if (_povesteCurenta == null)
+            {
+                erori.Add("Nicio poveste încărcată.");
+                return erori;
+            }
+
+            // Colegem toate ID-urile și proprietățile
+            var toateIdBlocuri = new HashSet<string>();
+            var toateIdIdei = new HashSet<string>();
+            var toateCheiProprietati = new HashSet<string>();
+
+            // Verificăm unicitatea proprietăților și limitele
+            foreach (var prop in _povesteCurenta.Properties ?? new List<PropertyJsonDefinition>())
+            {
+                if (string.IsNullOrEmpty(prop.Key))
+                {
+                    erori.Add("O proprietate nu are 'key' setat.");
+                    continue;
+                }
+                if (!toateCheiProprietati.Add(prop.Key))
+                    erori.Add($"Proprietatea '{prop.Key}' este duplicată.");
+
+                if (prop.Min > prop.Max)
+                    erori.Add($"Proprietatea '{prop.Key}': 'min' ({prop.Min}) este mai mare decât 'max' ({prop.Max}).");
+                if (prop.Initial < prop.Min || prop.Initial > prop.Max)
+                    erori.Add($"Proprietatea '{prop.Key}': 'initial' ({prop.Initial}) nu este în intervalul [{prop.Min}, {prop.Max}].");
+            }
+
+            // Colectăm ID-uri de idei
+            foreach (var idee in _povesteCurenta.Ideas ?? new List<IdeaJsonDefinition>())
+            {
+                if (string.IsNullOrEmpty(idee.Id))
+                {
+                    erori.Add("O idee nu are 'id' setat.");
+                    continue;
+                }
+                if (!toateIdIdei.Add(idee.Id))
+                    erori.Add($"ID-ul de idee '{idee.Id}' este duplicat.");
+            }
+
+            // Colectăm ID-uri de blocuri
+            foreach (var zi in _povesteCurenta.Days ?? new List<DayJsonDefinition>())
+            {
+                foreach (var bloc in zi.Blocks ?? new List<BlockJsonDefinition>())
+                {
+                    if (string.IsNullOrEmpty(bloc.Id))
+                    {
+                        erori.Add("Un bloc nu are 'id' setat.");
+                        continue;
+                    }
+                    if (!toateIdBlocuri.Add(bloc.Id))
+                        erori.Add($"ID-ul de bloc '{bloc.Id}' este duplicat.");
+                }
+            }
+
+            // Verificăm existența blocului de start
+            if (string.IsNullOrEmpty(_povesteCurenta.StartBlock))
+                erori.Add("Povestea nu are 'startBlock' setat.");
+            else if (!toateIdBlocuri.Contains(_povesteCurenta.StartBlock))
+                erori.Add($"Blocul de start '{_povesteCurenta.StartBlock}' nu există.");
+
+            // Verificăm fiecare bloc
+            foreach (var zi in _povesteCurenta.Days ?? new List<DayJsonDefinition>())
+            {
+                foreach (var bloc in zi.Blocks ?? new List<BlockJsonDefinition>())
+                {
+                    if (string.IsNullOrEmpty(bloc.Id)) continue;
+
+                    if (bloc.DecisionsRequired > 0 && (bloc.Decisions == null || bloc.Decisions.Count == 0))
+                        erori.Add($"Blocul '{bloc.Id}' necesită {bloc.DecisionsRequired} decizii, dar nu are nicio decizie definită.");
+
+                    if (!string.IsNullOrEmpty(bloc.NextBlock) && !toateIdBlocuri.Contains(bloc.NextBlock))
+                        erori.Add($"Blocul '{bloc.Id}': 'nextBlock' '{bloc.NextBlock}' nu există.");
+
+                    if (bloc.Decisions != null)
+                    {
+                        foreach (var decizie in bloc.Decisions)
+                        {
+                            if (string.IsNullOrEmpty(decizie.TargetBlock))
+                                erori.Add($"Blocul '{bloc.Id}', decizia '{decizie.Text}': nu are 'targetBlock' setat.");
+                            else if (!toateIdBlocuri.Contains(decizie.TargetBlock))
+                                erori.Add($"Blocul '{bloc.Id}', decizia '{decizie.Text}': blocul destinație '{decizie.TargetBlock}' nu există.");
+
+                            if (!string.IsNullOrEmpty(decizie.UnlocksIdeaId) && !toateIdIdei.Contains(decizie.UnlocksIdeaId))
+                                erori.Add($"Blocul '{bloc.Id}', decizia '{decizie.Text}': ideea '{decizie.UnlocksIdeaId}' nu există.");
+
+                            if (decizie.Effects != null)
+                                VerificaEfecte(decizie.Effects, toateCheiProprietati, toateIdIdei, $"Blocul '{bloc.Id}', decizia '{decizie.Text}'", erori);
+
+                            if (decizie.Condition != null)
+                                VerificaConditionRecursiv(decizie.Condition, toateCheiProprietati, $"Blocul '{bloc.Id}', decizia '{decizie.Text}'", erori);
+                        }
+                    }
+                }
+            }
+
+            // Verifică onMaxBlock / onMinBlock
+            foreach (var prop in _povesteCurenta.Properties ?? new List<PropertyJsonDefinition>())
+            {
+                if (!string.IsNullOrEmpty(prop.OnMaxBlock) && !toateIdBlocuri.Contains(prop.OnMaxBlock))
+                    erori.Add($"Proprietatea '{prop.Key}': 'onMaxBlock' '{prop.OnMaxBlock}' nu există.");
+                if (!string.IsNullOrEmpty(prop.OnMinBlock) && !toateIdBlocuri.Contains(prop.OnMinBlock))
+                    erori.Add($"Proprietatea '{prop.Key}': 'onMinBlock' '{prop.OnMinBlock}' nu există.");
+            }
+
+            // Verifică ideile
+            foreach (var idee in _povesteCurenta.Ideas ?? new List<IdeaJsonDefinition>())
+            {
+                if (idee.ResearchLevels == null || idee.ResearchLevels.Count == 0)
+                    erori.Add($"Ideea '{idee.Id}' nu are niciun nivel de research.");
+                else
+                {
+                    var nivele = new HashSet<int>();
+                    foreach (var nivel in idee.ResearchLevels)
+                    {
+                        if (!nivele.Add(nivel.Level))
+                            erori.Add($"Ideea '{idee.Id}' are nivelul {nivel.Level} duplicat.");
+                        if (nivel.Effects != null)
+                            VerificaEfecte(nivel.Effects, toateCheiProprietati, toateIdIdei, $"Ideea '{idee.Id}', nivelul {nivel.Level}", erori);
+                    }
+                }
+            }
+
+            // Accesibilitate
+            var blocuriAccesibile = CalculeazaBlocuriAccesibile(toateIdBlocuri);
+            foreach (var id in toateIdBlocuri)
+            {
+                if (!blocuriAccesibile.Contains(id))
+                    erori.Add($"Blocul '{id}' nu este accesibil din 'startBlock' (bloc mort).");
+            }
+
+            // Momentan nu verificăm imaginile
+            return erori;
+        }
+
+        // Verifică o listă de efecte
+        private void VerificaEfecte(List<EffectJsonDefinition> efecte, HashSet<string> cheiProprietati, HashSet<string> idIdei, string context, List<string> erori)
+        {
+            foreach (var efect in efecte)
+            {
+                if (string.IsNullOrEmpty(efect.Type))
+                {
+                    erori.Add($"{context}: un efect nu are 'type' setat.");
+                    continue;
+                }
+
+                if (efect.Type?.ToUpper() == "UNLOCK_LEVEL")
+                {
+                    if (string.IsNullOrEmpty(efect.Property))
+                        erori.Add($"{context}: efectul UNLOCK_LEVEL nu are 'property' (ID-ul ideii).");
+                    else if (!idIdei.Contains(efect.Property))
+                        erori.Add($"{context}: efectul UNLOCK_LEVEL referă ideea '{efect.Property}' care nu există.");
+                }
+                else
+                {
+                    var tipuriValide = new HashSet<string> { "ADD", "SET", "MULTIPLY" };
+                    if (!tipuriValide.Contains(efect.Type?.ToUpper()))
+                        erori.Add($"{context}: tipul de efect '{efect.Type}' nu este recunoscut (ADD, SET, MULTIPLY).");
+
+                    if (string.IsNullOrEmpty(efect.Property))
+                        erori.Add($"{context}: un efect de tip '{efect.Type}' nu are 'property' setat.");
+                    else if (!cheiProprietati.Contains(efect.Property))
+                        erori.Add($"{context}: efectul folosește proprietatea '{efect.Property}' care nu este definită.");
+                }
+            }
+        }
+
+        private string CopiazaImagine(string caleSursa, string folderDest)
+        {
+            if (string.IsNullOrEmpty(caleSursa) || !File.Exists(caleSursa))
+                return null;
+            string numeFisier = Path.GetFileName(caleSursa);
+            string dest = Path.Combine(folderDest, numeFisier);
+            // Dacă există deja, adaugă un număr
+            int i = 1;
+            string faraExt = Path.GetFileNameWithoutExtension(numeFisier);
+            string ext = Path.GetExtension(numeFisier);
+            while (File.Exists(dest))
+            {
+                dest = Path.Combine(folderDest, $"{faraExt}_{i}{ext}");
+                i++;
+            }
+            File.Copy(caleSursa, dest, true);
+            return Path.GetFileName(dest); // returnează doar numele fișierului
+        }
+
+        // Verificare recursivă a condițiilor
+        private void VerificaConditionRecursiv(ConditionNode cond, HashSet<string> cheiProprietati, string context, List<string> erori)
+        {
+            if (cond == null) return;
+
+            if (cond is ComparisonNode comp)
+            {
+                if (string.IsNullOrEmpty(comp.Property))
+                    erori.Add($"{context}: condiția nu are 'property' setat.");
+                else if (!cheiProprietati.Contains(comp.Property))
+                    erori.Add($"{context}: condiția folosește proprietatea '{comp.Property}' care nu este definită.");
+
+                var operatoriValizi = new HashSet<string> { "==", "!=", ">", ">=", "<", "<=" };
+                if (string.IsNullOrEmpty(comp.Operator))
+                    erori.Add($"{context}: condiția nu are 'operator' setat.");
+                else if (!operatoriValizi.Contains(comp.Operator))
+                    erori.Add($"{context}: operatorul '{comp.Operator}' nu este valid.");
+            }
+            else if (cond is LogicalNode logic)
+            {
+                if (string.IsNullOrEmpty(logic.Operator) || (logic.Operator != "AND" && logic.Operator != "OR"))
+                    erori.Add($"{context}: condiția logică are un operator invalid '{logic.Operator}' (așteptat AND sau OR).");
+
+                if (logic.Children == null || logic.Children.Count == 0)
+                    erori.Add($"{context}: condiția logică '{logic.Operator}' nu are condiții copil.");
+                else
+                {
+                    foreach (var child in logic.Children)
+                        VerificaConditionRecursiv(child, cheiProprietati, context, erori);
+                }
+            }
+        }
+
+        // Calculează blocurile accesibile pornind de la startBlock
+        private HashSet<string> CalculeazaBlocuriAccesibile(HashSet<string> toateIdBlocuri)
+        {
+            var accesibile = new HashSet<string>();
+            var coada = new Queue<string>();
+
+            if (!string.IsNullOrEmpty(_povesteCurenta.StartBlock))
+                coada.Enqueue(_povesteCurenta.StartBlock);
+
+            while (coada.Count > 0)
+            {
+                var id = coada.Dequeue();
+                if (!accesibile.Add(id)) continue;
+
+                var bloc = GasesteBlocDupaIdSimplu(id);
+                if (bloc == null) continue;
+
+                if (!string.IsNullOrEmpty(bloc.NextBlock))
+                    coada.Enqueue(bloc.NextBlock);
+
+                if (bloc.Decisions != null)
+                {
+                    foreach (var decizie in bloc.Decisions)
+                    {
+                        if (!string.IsNullOrEmpty(decizie.TargetBlock))
+                            coada.Enqueue(decizie.TargetBlock);
+                    }
+                }
+
+                // Adăugăm și blocurile de trigger
+                foreach (var prop in _povesteCurenta.Properties ?? new List<PropertyJsonDefinition>())
+                {
+                    if (!string.IsNullOrEmpty(prop.OnMaxBlock))
+                        coada.Enqueue(prop.OnMaxBlock);
+                    if (!string.IsNullOrEmpty(prop.OnMinBlock))
+                        coada.Enqueue(prop.OnMinBlock);
+                }
+            }
+
+            return accesibile;
+        }
+
+        // Găsește un bloc după ID
+        private BlockJsonDefinition GasesteBlocDupaIdSimplu(string idBloc)
+        {
+            if (_povesteCurenta?.Days == null) return null;
+            foreach (var zi in _povesteCurenta.Days)
+            {
+                var bloc = zi.Blocks.FirstOrDefault(b => b.Id == idBloc);
+                if (bloc != null) return bloc;
+            }
+            return null;
+        }
+
+        private void btnAlegeBackground_Click(object sender, EventArgs e)
+        {
+            if (_povesteCurenta == null)
+            {
+                MessageBox.Show("Nu există nicio poveste încărcată. Creează sau deschide o poveste mai întâi.",
+                                "Atenție", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var ofd = new OpenFileDialog
+            {
+                Title = "Alege imaginea de fundal",
+                Filter = "Imagini (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp"
+            })
+            {
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    _povesteCurenta.BackgroundImage = ofd.FileName;
+                    try
+                    {
+                        pbBackgroundPreview.Image = Image.FromFile(ofd.FileName);
+                    }
+                    catch
+                    {
+                        pbBackgroundPreview.Image = null;
+                        MessageBox.Show("Nu s-a putut încărca imaginea selectată.", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void btnStergeBackground_Click(object sender, EventArgs e)
+        {
+            _povesteCurenta.BackgroundImage = null;
+            pbBackgroundPreview.Image = null;
+        }
+
         // ── Utilitare ─────────────────────────────────────────────────────────
         private void ReordoneazaLista<T>(List<T> lista, ListBox lb, int dir, Action refresh)
         {
@@ -924,15 +1423,29 @@ namespace proiect_poo
         // ═════════════════════════════════════════════════════════════════════
         private void InitializeComponent()
         {
+            //importa zip
+
+            Button btnIncarcaZip = new Button { Location = new Point(148, 12), Size = new Size(130, 30), Text = "📦 Deschide ZIP" };
+            btnIncarcaZip.Click += btnIncarcaZip_Click;
+            this.Controls.Add(btnIncarcaZip);
+
+            //exporta zip
+
+            Button btnExportaZip = new Button { Location = new Point(280, 12), Size = new Size(130, 30), Text = "📦 Exportă ZIP" };
+            btnExportaZip.Click += btnExportaZip_Click;
+            this.Controls.Add(btnExportaZip);
+
+            // buton validare
+
+            Button btnValideaza = new Button { Location = new Point(800, 12), Size = new Size(100, 30), Text = "✅ Validează" };
+            btnValideaza.Click += btnValideaza_Click;
+            this.Controls.Add(btnValideaza);
+
             // ── Toolbar ──
             btnCreazaNoua = new Button { Location = new Point(12, 12), Size = new Size(130, 30), Text = "➕ Poveste Nouă" };
-            btnIncarcaExistenta = new Button { Location = new Point(148, 12), Size = new Size(130, 30), Text = "📂 Deschide JSON" };
-            btnSalveaza = new Button { Location = new Point(908, 12), Size = new Size(130, 30), Text = "💾 Salvează" };
-            lblTitluPoveste = new Label { Location = new Point(300, 17), Size = new Size(60, 20), Text = "Titlu:" };
-            txtTitluPoveste = new TextBox { Location = new Point(360, 14), Size = new Size(300, 20) };
+            lblTitluPoveste = new Label { Location = new Point(580, 17), Size = new Size(60, 20), Text = "Titlu:" };
+            txtTitluPoveste = new TextBox { Location = new Point(640, 14), Size = new Size(150, 20) };
             btnCreazaNoua.Click += btnCreazaNoua_Click;
-            btnIncarcaExistenta.Click += btnIncarcaExistenta_Click;
-            btnSalveaza.Click += btnSalveaza_Click;
 
             // ── Stânga — Statusuri ──
             lblStatusuriTitlu = new Label { Location = new Point(12, 55), Size = new Size(220, 18), Text = "📊 Statusuri:" };
@@ -1022,6 +1535,33 @@ namespace proiect_poo
             lblDecizieDestinatieTitlu = new Label { Location = new Point(rx, 268), Size = new Size(95, 20), Text = "Sari la bloc ID:" };
             txtDecizieDestinatie = new TextBox { Location = new Point(rx + 100, 265), Size = new Size(440, 20) };
 
+            Button btnAlegeIconDecizie = new Button { Location = new Point(10, 400), Size = new Size(90, 23), Text = "Iconiță" };
+            Button btnStergeIconDecizie = new Button { Location = new Point(10 + 95, 400), Size = new Size(80, 23), Text = "Șterge" };
+            pbIconDecizie = new PictureBox { Location = new Point(10 + 180, 400), Size = new Size(30, 30), SizeMode = PictureBoxSizeMode.Zoom, BorderStyle = BorderStyle.FixedSingle };
+
+            btnAlegeIconDecizie.Click += (s, ev) =>
+            {
+                if (_decizieCurenta == null) return;
+                using (var ofd = new OpenFileDialog { Filter = "Iconițe (*.png;*.ico)|*.png;*.ico" })
+                {
+                    if (ofd.ShowDialog() == DialogResult.OK)
+                    {
+                        _decizieCurenta.Icon = ofd.FileName;
+                        try { pbIconDecizie.Image = Image.FromFile(ofd.FileName); } catch { }
+                    }
+                }
+            };
+            btnStergeIconDecizie.Click += (s, ev) =>
+            {
+                if (_decizieCurenta == null) return;
+                _decizieCurenta.Icon = null;
+                pbIconDecizie.Image = null;
+            };
+
+            panelEditareBloc.Controls.Add(btnAlegeIconDecizie);
+            panelEditareBloc.Controls.Add(btnStergeIconDecizie);
+            panelEditareBloc.Controls.Add(pbIconDecizie);
+
             lblUnlocksIdee = new Label { Location = new Point(rx, 295), Size = new Size(95, 20), Text = "Deblochează:" };
             cmbUnlocksIdee = new ComboBox { Location = new Point(rx + 100, 292), Size = new Size(250, 22), DropDownStyle = ComboBoxStyle.DropDownList };
 
@@ -1073,16 +1613,73 @@ namespace proiect_poo
             cmbCondCopilOp.SelectedIndexChanged += cmbCondCopilOp_SelectedIndexChanged;
             numCondCopilVal.ValueChanged += numCondCopilVal_ValueChanged;
 
-            lblDecizieEfecteTitlu = new Label { Location = new Point(rx, 492), Size = new Size(300, 15), Text = "Efecte (JSON):" };
-            txtDecizieEfecte = new TextBox
+            lblDecizieEfecteTitlu = new Label { Location = new Point(rx, 492), Size = new Size(300, 15), Text = "Efecte:" };
+            lstDecizieEfecte = new ListBox { Location = new Point(rx, 510), Size = new Size(250, 120) };
+            btnAdaugaEfectDecizie = new Button { Location = new Point(rx + 260, 510), Size = new Size(80, 24), Text = "➕ Adaugă" };
+            btnStergeEfectDecizie = new Button { Location = new Point(rx + 260, 538), Size = new Size(80, 24), Text = "❌ Șterge" };
+
+            cmbEfectDecizieTip = new ComboBox { Location = new Point(rx, 640), Size = new Size(80, 22), DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbEfectDecizieTip.Items.AddRange(new object[] { "ADD", "SET", "MULTIPLY" });
+            cmbEfectDecizieTip.SelectedIndex = 0;
+
+            cmbEfectDecizieProp = new ComboBox { Location = new Point(rx + 90, 640), Size = new Size(130, 22), DropDownStyle = ComboBoxStyle.DropDownList };
+            numEfectDecizieVal = new NumericUpDown { Location = new Point(rx + 230, 640), Size = new Size(70, 22), Minimum = -200, Maximum = 200 };
+
+            btnAdaugaEfectDecizie.Click += btnAdaugaEfectDecizie_Click;
+            btnStergeEfectDecizie.Click += btnStergeEfectDecizie_Click;
+            cmbEfectDecizieProp.SelectedIndexChanged += cmbEfectDecizieProp_SelectedIndexChanged;
+            numEfectDecizieVal.ValueChanged += numEfectDecizieVal_ValueChanged;
+
+            // ── Imagine de fundal ──
+            lblBackgroundImage = new Label { Location = new Point(12, 690), Size = new Size(130, 20), Text = "Imagine fundal:" };
+            btnAlegeBackground = new Button { Location = new Point(12, 712), Size = new Size(100, 23), Text = "Alege imagine" };
+            btnStergeBackground = new Button { Location = new Point(115, 712), Size = new Size(80, 23), Text = "Șterge" };
+            pbBackgroundPreview = new PictureBox { Location = new Point(12, 745), Size = new Size(80, 60), SizeMode = PictureBoxSizeMode.Zoom, BorderStyle = BorderStyle.FixedSingle };
+
+            btnAlegeBackground.Click += btnAlegeBackground_Click;
+            btnStergeBackground.Click += btnStergeBackground_Click;
+
+            this.Controls.Add(lblBackgroundImage);
+            this.Controls.Add(btnAlegeBackground);
+            this.Controls.Add(btnStergeBackground);
+            this.Controls.Add(pbBackgroundPreview);
+
+            // Imagine fundal pentru bloc
+            Button btnAlegeImgBloc = new Button { Location = new Point(10, 210), Size = new Size(130, 23), Text = "Imagine fundal bloc" };
+            Button btnStergeImgBloc = new Button { Location = new Point(145, 210), Size = new Size(80, 23), Text = "Șterge" };
+            pbImgBloc = new PictureBox { Location = new Point(230, 205), Size = new Size(40, 30), SizeMode = PictureBoxSizeMode.Zoom, BorderStyle = BorderStyle.FixedSingle };
+
+            btnAlegeImgBloc.Click += (s, ev) =>
             {
-                Location = new Point(rx, 510),
-                Size = new Size(540, 165),
-                Multiline = true,
-                ScrollBars = ScrollBars.Vertical,
-                Font = new Font("Consolas", 9)
+                if (_blocCurent == null) return;
+                using (var ofd = new OpenFileDialog { Filter = "Imagini (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp" })
+                {
+                    if (ofd.ShowDialog() == DialogResult.OK)
+                    {
+                        _blocCurent.BackgroundImage = ofd.FileName;
+                        try { pbImgBloc.Image = Image.FromFile(ofd.FileName); } catch { }
+                    }
+                }
             };
-            txtDecizieEfecte.TextChanged += txtDecizieEfecte_TextChanged;
+            btnStergeImgBloc.Click += (s, ev) =>
+            {
+                if (_blocCurent == null) return;
+                _blocCurent.BackgroundImage = null;
+                pbImgBloc.Image = null;
+            };
+
+            panelEditareBloc.Controls.Add(btnAlegeImgBloc);
+            panelEditareBloc.Controls.Add(btnStergeImgBloc);
+            panelEditareBloc.Controls.Add(pbImgBloc);
+
+            // Adăugăm controalele la panou
+            panelEditareBloc.Controls.Add(lblDecizieEfecteTitlu);
+            panelEditareBloc.Controls.Add(lstDecizieEfecte);
+            panelEditareBloc.Controls.Add(btnAdaugaEfectDecizie);
+            panelEditareBloc.Controls.Add(btnStergeEfectDecizie);
+            panelEditareBloc.Controls.Add(cmbEfectDecizieTip);
+            panelEditareBloc.Controls.Add(cmbEfectDecizieProp);
+            panelEditareBloc.Controls.Add(numEfectDecizieVal);
 
             panelEditareBloc.Controls.Add(lblBlocTitlu);
             panelEditareBloc.Controls.Add(lblBlockIdTitlu);
@@ -1125,7 +1722,6 @@ namespace proiect_poo
             panelEditareBloc.Controls.Add(lblCondCopilVal);
             panelEditareBloc.Controls.Add(numCondCopilVal);
             panelEditareBloc.Controls.Add(lblDecizieEfecteTitlu);
-            panelEditareBloc.Controls.Add(txtDecizieEfecte);
 
             // ── Panel editare IDEE ──
             panelEditareIdee = new Panel { Location = new Point(248, 55), Size = new Size(810, 690), BorderStyle = BorderStyle.FixedSingle };
@@ -1216,12 +1812,10 @@ namespace proiect_poo
 
             // ── Form ──
             this.SuspendLayout();
-            this.ClientSize = new Size(1070, 760);
+            this.ClientSize = new Size(1070, 820);
             this.Text = "Story Editor";
 
             this.Controls.Add(btnCreazaNoua);
-            this.Controls.Add(btnIncarcaExistenta);
-            this.Controls.Add(btnSalveaza);
             this.Controls.Add(lblTitluPoveste);
             this.Controls.Add(txtTitluPoveste);
             this.Controls.Add(lblStatusuriTitlu);

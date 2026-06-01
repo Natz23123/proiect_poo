@@ -10,5 +10,6 @@ namespace proiect_poo
         [JsonPropertyName("properties")] public List<PropertyJsonDefinition> Properties { get; set; } = new List<PropertyJsonDefinition>();
         [JsonPropertyName("ideas")] public List<IdeaJsonDefinition> Ideas { get; set; } = new List<IdeaJsonDefinition>();
         [JsonPropertyName("days")] public List<DayJsonDefinition> Days { get; set; } = new List<DayJsonDefinition>();
+        [JsonPropertyName("backgroundImage")] public string BackgroundImage { get; set; }
     }
 }

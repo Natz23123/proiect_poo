@@ -11,6 +11,7 @@ namespace proiect_poo
         {
             return $"{Type} {Property} {Value:+#;-#}";
         }
+
     }
 
 }

@@ -13,5 +13,6 @@ namespace proiect_poo {
         [JsonPropertyName("hudOrder")] public int HudOrder { get; set; }
         [JsonPropertyName("onMinBlock")] public string OnMinBlock { get; set; }
         [JsonPropertyName("onMaxBlock")] public string OnMaxBlock { get; set; }
+        [JsonPropertyName("icon")] public string Icon { get; set; }
     }
 }

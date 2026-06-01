@@ -11,5 +11,6 @@ namespace proiect_poo
         [JsonPropertyName("decisions")] public List<DecisionJsonDefinition> Decisions { get; set; } = new List<DecisionJsonDefinition>();
         [JsonPropertyName("blockType")] public string BlockType { get; set; } = "normal";
         [JsonPropertyName("nextBlock")] public string NextBlock { get; set; }
+        [JsonPropertyName("backgroundImage")] public string BackgroundImage { get; set; }
     }
 }
