@@ -319,6 +319,10 @@ namespace proiect_poo
 
                 ActualizeazaVizibilitateTipBloc();
                 ActualizeazaListaDecizii();
+                if (lstDecizii.Items.Count > 0)
+                    lstDecizii.SelectedIndex = 0;
+                else
+                    lstDecizii_SelectedIndexChanged(null, null); // forțează curățarea preview-ului
                 SetareStareEditareDecizie(false);
 
                 _seIncarcaDatele = false;
@@ -575,21 +579,27 @@ namespace proiect_poo
         {
             int idx = lstDecizii.SelectedIndex;
             if (idx < 0 || _blocCurent?.Decisions == null || idx >= _blocCurent.Decisions.Count)
-            { 
+            {
                 _decizieCurenta = null;
-
-                if (!string.IsNullOrEmpty(_decizieCurenta.Icon) && File.Exists(_decizieCurenta.Icon))
-                {
-                    try { pbIconDecizie.Image = Image.FromFile(_decizieCurenta.Icon); } catch { pbIconDecizie.Image = null; }
-                }
-                else pbIconDecizie.Image = null;
-
-                SetareStareEditareDecizie(false); return; 
+                pbIconDecizie.Image = null;   // ← corect: nu mai accesa _decizieCurenta.Icon
+                SetareStareEditareDecizie(false);
+                return;
             }
 
             _decizieCurenta = _blocCurent.Decisions[idx];
-            _seIncarcaDatele = true;
 
+            // Actualizează previzualizarea iconiței
+            if (!string.IsNullOrEmpty(_decizieCurenta.Icon) && File.Exists(_decizieCurenta.Icon))
+            {
+                try { pbIconDecizie.Image = Image.FromFile(_decizieCurenta.Icon); }
+                catch { pbIconDecizie.Image = null; }
+            }
+            else
+            {
+                pbIconDecizie.Image = null;
+            }
+
+            _seIncarcaDatele = true;
             txtDecizieText.Text = _decizieCurenta.Text;
             txtDecizieDestinatie.Text = _decizieCurenta.TargetBlock;
             ActualizeazaListaEfecteDecizie();

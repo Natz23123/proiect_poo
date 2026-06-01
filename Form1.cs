@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using System.IO.Compression;
 
 namespace proiect_poo
 {
@@ -12,6 +13,8 @@ namespace proiect_poo
         private TextAnimation _textAnimation;
         private GameState _gameState;
         private ToolTip _tooltip = new ToolTip();
+        private string _tempExtractFolder;
+        private string _calePoveste;
 
         public Form1()
         {
@@ -22,32 +25,107 @@ namespace proiect_poo
             _textAnimation = new TextAnimation(lblTextHolder, 25);
             _gameState = new GameState();
 
-            // Activează stilizarea custom pentru tooltip-uri
             _tooltip.OwnerDraw = true;
             _tooltip.Draw += CustomToolTip_Draw;
             _tooltip.Popup += CustomToolTip_Popup;
 
-            IncarcaPovesteDinJson("default_story.json");
+            // Încarcă default_story.zip; dacă nu există, fallback pe json
+            if (File.Exists("default_story.zip"))
+            {
+                IncarcaPovesteDinFisier("default_story.zip");
+            }
+            else if (File.Exists("default_story.json"))
+            {
+                IncarcaPovesteDinFisier("default_story.json");
+            }
+            else
+            {
+                MessageBox.Show("Nu s-a găsit default_story.zip sau default_story.json. Jocul pornește fără poveste.");
+            }
+
+            // Curăță folderul temporar la închidere
+            this.FormClosed += (s, e) =>
+            {
+                if (!string.IsNullOrEmpty(_tempExtractFolder) && Directory.Exists(_tempExtractFolder))
+                    Directory.Delete(_tempExtractFolder, true);
+            };
         }
 
-        private void IncarcaPovesteDinJson(string caleFisier)
+        private void IncarcaPovesteDinFisier(string caleFisier)
         {
             try
             {
-                if (!File.Exists(caleFisier))
+                string ext = Path.GetExtension(caleFisier)?.ToLower();
+
+                if (ext == ".zip")
                 {
-                    MessageBox.Show($"Fișierul '{caleFisier}' nu a fost găsit!\n" +
-                                    $"Asigură-te că l-ai copiat în folderul 'bin/Debug' al proiectului tău.");
-                    return;
+                    // Extrage arhiva într-un folder temporar
+                    _tempExtractFolder = Path.Combine(Path.GetTempPath(), "poveste_joc_" + Guid.NewGuid().ToString("N"));
+                    Directory.CreateDirectory(_tempExtractFolder);
+                    ZipFile.ExtractToDirectory(caleFisier, _tempExtractFolder);
+
+                    string jsonPath = Path.Combine(_tempExtractFolder, "story.json");
+                    if (!File.Exists(jsonPath))
+                    {
+                        MessageBox.Show("Arhiva ZIP nu conține story.json!", "Eroare");
+                        return;
+                    }
+                    _calePoveste = _tempExtractFolder;
+                    _gameState.InitializareJoc(JsonManager.IncarcaPoveste(jsonPath));
+                }
+                else // JSON obișnuit
+                {
+                    if (!File.Exists(caleFisier))
+                    {
+                        MessageBox.Show($"Fișierul '{caleFisier}' nu a fost găsit!");
+                        return;
+                    }
+                    _calePoveste = Path.GetDirectoryName(caleFisier);
+                    _gameState.InitializareJoc(JsonManager.IncarcaPoveste(caleFisier));
                 }
 
-                StoryJsonDefinition poveste = JsonManager.IncarcaPoveste(caleFisier);
-                _gameState.InitializareJoc(poveste);
+                RezolvaCaiImagini();
                 ActualizeazaInterfata();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Eroare critică la încărcarea jocului: " + ex.Message);
+            }
+        }
+
+        private void RezolvaCaiImagini()
+        {
+            string baseDir = _calePoveste;
+            if (string.IsNullOrEmpty(baseDir)) return;
+
+            // Imaginea de fundal a poveștii
+            if (!string.IsNullOrEmpty(_gameState.PovesteIncarcata.BackgroundImage))
+            {
+                string fullPath = Path.Combine(baseDir, _gameState.PovesteIncarcata.BackgroundImage);
+                _gameState.PovesteIncarcata.BackgroundImage = File.Exists(fullPath) ? fullPath : null;
+            }
+
+            foreach (var zi in _gameState.PovesteIncarcata.Days)
+            {
+                foreach (var bloc in zi.Blocks)
+                {
+                    if (!string.IsNullOrEmpty(bloc.BackgroundImage))
+                    {
+                        string fullPath = Path.Combine(baseDir, bloc.BackgroundImage);
+                        bloc.BackgroundImage = File.Exists(fullPath) ? fullPath : null;
+                    }
+                    if (bloc.Decisions != null)
+                    {
+                        foreach (var dec in bloc.Decisions)
+                        {
+                            if (!string.IsNullOrEmpty(dec.Icon))
+                            {
+                                string fullPath = Path.Combine(baseDir, dec.Icon);
+                                dec.Icon = File.Exists(fullPath) ? fullPath : null;
+                            }
+                        }
+                    }
+                }
             }
         }
 
