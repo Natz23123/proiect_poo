@@ -18,16 +18,12 @@ namespace proiect_poo
 
         private Dictionary<string, Image> _imageCache = new Dictionary<string, Image>();
 
-        public Form1()
+        public Form1(string calePovesteCustom = null)
         {
             InitializeComponent();
 
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
             this.UpdateStyles();
-
-            //_blockBackgroundPictureBox.Controls.Add(panelHUD);
-            //_blockBackgroundPictureBox.Controls.Add(panelButoane);
-            //_blockBackgroundPictureBox.Controls.Add(lblTextHolder);
 
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -39,7 +35,6 @@ namespace proiect_poo
             _tooltip.Draw += CustomToolTip_Draw;
             _tooltip.Popup += CustomToolTip_Popup;
 
-            // Asigură-te că textul și panourile sunt deasupra fundalurilor
             lblTextHolder.BringToFront();
             panelHUD.BringToFront();
             panelButoane.BringToFront();
@@ -48,41 +43,48 @@ namespace proiect_poo
             panelHUD.BackColor = Color.Transparent;
             panelButoane.BackColor = Color.Transparent;
 
-            lblTextHolder.BringToFront();
-            panelHUD.BringToFront();
-            panelButoane.BringToFront();
-
             panelHUD.BorderStyle = BorderStyle.None;
             panelButoane.BorderStyle = BorderStyle.None;
             lblTextHolder.BorderStyle = BorderStyle.None;
 
-            // ACUM încarcă povestea
-            if (File.Exists("default_story.zip"))
+            // ----- LOGICA NOUĂ DE ÎNCĂRCARE -----
+            string povesteDeIncarcat = calePovesteCustom;
+
+            // Dacă nu a fost aleasă o poveste din OpenFileDialog, căutăm povestea default
+            if (string.IsNullOrEmpty(povesteDeIncarcat))
             {
-                IncarcaPovesteDinFisier("default_story.zip");
+                if (File.Exists("default_story.zip"))
+                {
+                    povesteDeIncarcat = "default_story.zip";
+                }
+                else if (File.Exists("default_story.json"))
+                {
+                    povesteDeIncarcat = "default_story.json";
+                }
             }
-            else if (File.Exists("default_story.json"))
+
+            // Încărcăm fișierul găsit sau primit ca parametru
+            if (!string.IsNullOrEmpty(povesteDeIncarcat) && File.Exists(povesteDeIncarcat))
             {
-                IncarcaPovesteDinFisier("default_story.json");
+                IncarcaPovesteDinFisier(povesteDeIncarcat);
             }
             else
             {
-                MessageBox.Show("Nu s-a găsit default_story.zip sau default_story.json. Jocul pornește fără poveste.");
+                MessageBox.Show("Nu s-a găsit nicio poveste validă (zip/json). Jocul pornește fără poveste.");
             }
+            // ------------------------------------
 
             // Curăță folderul temporar la închidere
             this.FormClosed += (s, e) =>
             {
                 foreach (var img in _imageCache.Values) img?.Dispose();
                 _imageCache.Clear();
-                // Eliberează imaginea de fundal a ferestrei (dacă există)
                 if (this.BackgroundImage != null)
                 {
                     this.BackgroundImage.Dispose();
                     this.BackgroundImage = null;
                 }
 
-                // Eliberează celelalte imagini din PictureBox-uri
                 ElibereazaImaginiDinControale(this.Controls);
 
                 GC.Collect();
@@ -467,9 +469,9 @@ namespace proiect_poo
                     btnResearch.FlatAppearance.MouseOverBackColor = Color.White;
                     btnResearch.Cursor = Cursors.Hand;
                     btnResearch.Margin = new Padding(0, 0, 5, 5);
-                    btnResearch.Text = "R";
+                    btnResearch.Text = "🔬";
                     btnResearch.ForeColor = Color.White;
-                    btnResearch.Font = new Font("Smallest Pixel-7", 14, FontStyle.Bold);
+                    btnResearch.Font = new Font("Smallest Pixel-7", 24, FontStyle.Bold);
                     btnResearch.MouseEnter += (s, e) => btnResearch.ForeColor = Color.Black;
                     btnResearch.MouseLeave += (s, e) => btnResearch.ForeColor = Color.White;
                     _tooltip.SetToolTip(btnResearch, "Dă research la o idee");
@@ -497,9 +499,9 @@ namespace proiect_poo
                     btnImpl.FlatAppearance.MouseOverBackColor = Color.White;
                     btnImpl.Cursor = Cursors.Hand;
                     btnImpl.Margin = new Padding(0, 0, 5, 5);
-                    btnImpl.Text = "I";
+                    btnImpl.Text = "⚙︎";
                     btnImpl.ForeColor = Color.White;
-                    btnImpl.Font = new Font("Smallest Pixel-7", 14, FontStyle.Bold);
+                    btnImpl.Font = new Font("Smallest Pixel-7", 24, FontStyle.Bold);
                     btnImpl.MouseEnter += (s, e) => btnImpl.ForeColor = Color.Black;
                     btnImpl.MouseLeave += (s, e) => btnImpl.ForeColor = Color.White;
                     _tooltip.SetToolTip(btnImpl, "Implementează o idee");

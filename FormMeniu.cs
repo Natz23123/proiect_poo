@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Windows.Forms;
 using System.Media;
+
 namespace proiect_poo
 {
     public partial class FormMeniu : Form
     {
+        // Butoanele existente din Designer
         private Button btnJoaca;
         private Button btnEditor;
         private PictureBox pictureBox1;
@@ -13,37 +15,129 @@ namespace proiect_poo
         private System.ComponentModel.IContainer components;
         private Button btnIesire;
 
+        // ========================================================
+        // LINIILE ADAUGATE: Declarăm butoanele noi ca să fie recunoscute în context
+        private Button btnDefaultStory;
+        private Button btnLoadStory;
+        private Button btnInapoi;
+        // ========================================================
+
         public FormMeniu()
         {
             InitializeComponent();
+            ConfigureazaSubmeniuPoveste();
+        }
+
+        private void ConfigureazaSubmeniuPoveste()
+        {
+            btnDefaultStory = CloneazaButonMeniu(btnJoaca, "Default Story", btnDefaultStory_Click);
+            btnLoadStory = CloneazaButonMeniu(btnEditor, "Load Story", btnLoadStory_Click);
+            btnInapoi = CloneazaButonMeniu(btnIesire, "Back", btnInapoi_Click);
+
+            this.Controls.Add(btnDefaultStory);
+            this.Controls.Add(btnLoadStory);
+            this.Controls.Add(btnInapoi);
+        }
+
+        private Button CloneazaButonMeniu(Button model, string text, EventHandler clickEvent)
+        {
+            Button btn = new Button();
+            btn.Size = model.Size;
+            btn.Location = model.Location;
+            btn.Font = model.Font;
+            btn.FlatStyle = model.FlatStyle;
+            btn.FlatAppearance.BorderColor = model.FlatAppearance.BorderColor;
+            btn.ForeColor = model.ForeColor;
+            btn.Text = text;
+            btn.AutoSize = model.AutoSize;
+            btn.AutoSizeMode = model.AutoSizeMode;
+            btn.Visible = false; // Ascunse la început
+            btn.Click += clickEvent;
+            btn.MouseEnter += FormMeniu_MouseEnter; // Sunet retro + indicator automatisme
+            return btn;
         }
 
         // Butonul: PORNEȘTE JOCUL
         private void btnJoaca_Click(object sender, EventArgs e)
         {
-            this.Hide(); // Ascundem meniul ca să nu stea în fundal degeaba
+            // Ascundem meniul principal
+            btnJoaca.Visible = false;
+            btnEditor.Visible = false;
+            btnIesire.Visible = false;
+            lblArrowHover.Visible = false;
 
-            Form1 fereastraJoc = new Form1();
-            fereastraJoc.ShowDialog(); // ShowDialog blochează codul aici până când se închide jocul
+            // Arătăm opțiunile de poveste
+            btnDefaultStory.Visible = true;
+            btnLoadStory.Visible = true;
+            btnInapoi.Visible = true;
+        }
 
-            this.Show(); // Când jucătorul închide jocul și revine, meniul reapare automatic
+        private void btnDefaultStory_Click(object sender, EventArgs e)
+        {
+            PornesteJocul(null); // Trimite null ca să încarce fișierul default standard
+        }
+
+        private void btnLoadStory_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "Arhive ZIP (*.zip)|*.zip";
+                openFileDialog.Title = "Selectează arhiva ZIP a poveștii";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    PornesteJocul(openFileDialog.FileName);
+                }
+            }
+        }
+
+        private void btnInapoi_Click(object sender, EventArgs e)
+        {
+            // Ascundem opțiunile de poveste
+            btnDefaultStory.Visible = false;
+            btnLoadStory.Visible = false;
+            btnInapoi.Visible = false;
+            lblArrowHover.Visible = false;
+
+            // Revenim la meniul principal
+            btnJoaca.Visible = true;
+            btnEditor.Visible = true;
+            btnIesire.Visible = true;
+        }
+
+        private void PornesteJocul(string caleFisier)
+        {
+            this.Hide();
+
+            Form1 fereastraJoc = new Form1(caleFisier);
+            fereastraJoc.ShowDialog();
+
+            // Când jucătorul revine în meniu, resetăm starea vizuală la meniul principal
+            btnDefaultStory.Visible = false;
+            btnLoadStory.Visible = false;
+            btnInapoi.Visible = false;
+
+            btnJoaca.Visible = true;
+            btnEditor.Visible = true;
+            btnIesire.Visible = true;
+            lblArrowHover.Visible = false;
+
+            this.Show();
         }
 
         // Butonul: DESCHIDE EDITOR
         private void btnEditor_Click(object sender, EventArgs e)
         {
-            this.Hide(); // Ascundem meniul
-
+            this.Hide();
             FormEditor fereastraEditor = new FormEditor();
-            fereastraEditor.ShowDialog(); // Deschidem editorul
-
-            this.Show(); // Când se închide editorul, meniul reapare
+            fereastraEditor.ShowDialog();
+            this.Show();
         }
 
         // Butonul: IEȘIRE
         private void btnIesire_Click(object sender, EventArgs e)
         {
-            Application.Exit(); // Închide complet aplicația
+            Application.Exit();
         }
 
         private void InitializeComponent()
@@ -67,7 +161,7 @@ namespace proiect_poo
             this.btnJoaca.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnJoaca.Font = new System.Drawing.Font("Smallest Pixel-7", 20F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnJoaca.ForeColor = System.Drawing.SystemColors.Control;
-            this.btnJoaca.Location = new System.Drawing.Point(421, 252);
+            this.btnJoaca.Location = new System.Drawing.Point(404, 252);
             this.btnJoaca.Name = "btnJoaca";
             this.btnJoaca.Size = new System.Drawing.Size(105, 52);
             this.btnJoaca.TabIndex = 0;
@@ -101,7 +195,7 @@ namespace proiect_poo
             this.btnIesire.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnIesire.Font = new System.Drawing.Font("Smallest Pixel-7", 20F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnIesire.ForeColor = System.Drawing.SystemColors.Control;
-            this.btnIesire.Location = new System.Drawing.Point(421, 378);
+            this.btnIesire.Location = new System.Drawing.Point(404, 378);
             this.btnIesire.Name = "btnIesire";
             this.btnIesire.Size = new System.Drawing.Size(101, 52);
             this.btnIesire.TabIndex = 2;
