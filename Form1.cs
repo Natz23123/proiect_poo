@@ -55,6 +55,10 @@ namespace proiect_poo
             panelHUD.BringToFront();
             panelButoane.BringToFront();
 
+            panelHUD.BorderStyle = BorderStyle.None;
+            panelButoane.BorderStyle = BorderStyle.None;
+            lblTextHolder.BorderStyle = BorderStyle.None;
+
             // ACUM încarcă povestea
             if (File.Exists("default_story.zip"))
             {
@@ -283,6 +287,7 @@ namespace proiect_poo
             createStatusHud();
             createButtons(blocCurent);
         }
+        protected override void OnPaintBackground(PaintEventArgs e) { }
 
         private void AfiseazaEcranEnding(BlockJsonDefinition blocEnding)
         {
@@ -372,30 +377,25 @@ namespace proiect_poo
                 if (decizie.Condition != null && !decizie.Condition.Evaluate(_gameState.ToateStatusurile))
                     continue;
 
-                // Verifică iconița
                 bool areIcon = !string.IsNullOrEmpty(decizie.Icon) && File.Exists(decizie.Icon);
                 Image icon = null;
                 if (areIcon)
                 {
-                    try { icon = Image.FromFile(decizie.Icon); } catch { areIcon = false; }
+                    try { icon = new Bitmap(Image.FromFile(decizie.Icon), new Size(32, 32)); }
+                    catch { areIcon = false; }
                 }
-
-                // Container pentru buton + iconiță
-                FlowLayoutPanel panelDecizie = new FlowLayoutPanel
-                {
-                    AutoSize = true,
-                    FlowDirection = FlowDirection.LeftToRight,
-                    WrapContents = false,
-                    Margin = new Padding(0, 0, 0, 5)
-                };
 
                 Button btn = BuildButton(decizie.Text, BuildNormalTooltip(decizie));
-                if (areIcon)
+
+                if (areIcon && icon != null)
                 {
-                    // Redu ușor lățimea minimă pentru a face loc iconiței
-                    btn.MinimumSize = new Size(280, 45);
-                    btn.Width = 280;
+                    btn.Image = icon;
+                    btn.ImageAlign = ContentAlignment.MiddleRight;
+                    btn.TextAlign = ContentAlignment.MiddleLeft;
+                    btn.TextImageRelation = TextImageRelation.TextBeforeImage;
+                    btn.Padding = new Padding(10, 5, 7, 10);
                 }
+
                 var decizieCapturata = decizie;
                 int decisionsRequired = blocCurent.DecisionsRequired;
 
@@ -404,21 +404,8 @@ namespace proiect_poo
                     _gameState.AplicaEfecteDecizie(decizieCapturata, decisionsRequired);
                     ActualizeazaInterfata();
                 };
-                panelDecizie.Controls.Add(btn);
 
-                if (areIcon && icon != null)
-                {
-                    PictureBox iconBox = new PictureBox
-                    {
-                        Image = icon,
-                        SizeMode = PictureBoxSizeMode.Zoom,
-                        Size = new Size(40, 40),
-                        Margin = new Padding(5, 0, 0, 0)
-                    };
-                    panelDecizie.Controls.Add(iconBox);
-                }
-
-                panelButoane.Controls.Add(panelDecizie);
+                panelButoane.Controls.Add(btn); // direct în panel, fără FlowLayoutPanel intermediar
             }
 
             // Buton agregat RESEARCH

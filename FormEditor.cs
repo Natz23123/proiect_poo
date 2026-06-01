@@ -105,9 +105,6 @@ namespace proiect_poo
         private TextBox txtNivelDesc;
 
         // Imagini
-        private Label lblBackgroundImage;
-        private Button btnAlegeBackground, btnStergeBackground;
-        private PictureBox pbBackgroundPreview;
 
         private PictureBox pbImgBloc;
         private PictureBox pbIconDecizie;
@@ -128,8 +125,7 @@ namespace proiect_poo
             btnAdaugaStatus, btnStergeStatus, btnStatusSus, btnStatusJos,
             treeViewStructura, btnAdaugaZi, btnStergeZi,
             btnAdaugaBloc, btnBlocSus, btnBlocJos,
-            btnAdaugaIdee, btnStergeIdee,
-            btnAlegeBackground, btnStergeBackground })  // ← adăugate
+            btnAdaugaIdee, btnStergeIdee})  // ← adăugate
             c.Enabled = activa;
         }
 
@@ -168,7 +164,6 @@ namespace proiect_poo
             txtTitluPoveste.Text = _povesteCurenta.Title;
             ActualizeazaTreeView();
             ActualizeazaListaStatusuri();
-            ActualizeazaBackgroundPreview();
         }
 
         // export zip
@@ -415,25 +410,6 @@ namespace proiect_poo
 
         private void cmbEfectDecizieProp_SelectedIndexChanged(object sender, EventArgs e) { }
         private void numEfectDecizieVal_ValueChanged(object sender, EventArgs e) { }
-
-        private void ActualizeazaBackgroundPreview()
-        {
-            if (!string.IsNullOrEmpty(_povesteCurenta?.BackgroundImage) && File.Exists(_povesteCurenta.BackgroundImage))
-            {
-                try
-                {
-                    pbBackgroundPreview.Image = Image.FromFile(_povesteCurenta.BackgroundImage);
-                }
-                catch
-                {
-                    pbBackgroundPreview.Image = null;
-                }
-            }
-            else
-            {
-                pbBackgroundPreview.Image = null;
-            }
-        }
 
         // ── Statusuri ─────────────────────────────────────────────────────────
         private void ActualizeazaListaStatusuri()
@@ -1344,44 +1320,35 @@ namespace proiect_poo
             return null;
         }
 
-        private void btnAlegeBackground_Click(object sender, EventArgs e)
-        {
-            if (_povesteCurenta == null)
-            {
-                MessageBox.Show("Nu există nicio poveste încărcată. Creează sau deschide o poveste mai întâi.",
-                                "Atenție", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            using (var ofd = new OpenFileDialog
-            {
-                Title = "Alege imaginea de fundal",
-                Filter = "Imagini (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp"
-            })
-            {
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    _povesteCurenta.BackgroundImage = ofd.FileName;
-                    try
-                    {
-                        pbBackgroundPreview.Image = Image.FromFile(ofd.FileName);
-                    }
-                    catch
-                    {
-                        pbBackgroundPreview.Image = null;
-                        MessageBox.Show("Nu s-a putut încărca imaginea selectată.", "Eroare", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-        }
-
-        private void btnStergeBackground_Click(object sender, EventArgs e)
-        {
-            _povesteCurenta.BackgroundImage = null;
-            pbBackgroundPreview.Image = null;
-        }
-
         // ── Utilitare ─────────────────────────────────────────────────────────
+
+        private void DeschidePreviewImagine(Image imagine)
+        {
+            if (imagine == null) return;
+
+            Form preview = new Form();
+            preview.Text = "Preview";
+            preview.StartPosition = FormStartPosition.CenterParent;
+            preview.FormBorderStyle = FormBorderStyle.FixedDialog;
+            preview.MaximizeBox = false;
+            preview.MinimizeBox = false;
+
+            PictureBox pb = new PictureBox
+            {
+                Image = imagine,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Dock = DockStyle.Fill
+            };
+
+            // Dimensionează fereastra la dimensiunea originală a imaginii, max 800x600
+            int w = Math.Min(imagine.Width, 800);
+            int h = Math.Min(imagine.Height, 600);
+            preview.ClientSize = new Size(w, h);
+
+            preview.Controls.Add(pb);
+            preview.ShowDialog(this);
+        }
+
         private void ReordoneazaLista<T>(List<T> lista, ListBox lb, int dir, Action refresh)
         {
             if (lista == null) return;
@@ -1640,20 +1607,6 @@ namespace proiect_poo
             cmbEfectDecizieProp.SelectedIndexChanged += cmbEfectDecizieProp_SelectedIndexChanged;
             numEfectDecizieVal.ValueChanged += numEfectDecizieVal_ValueChanged;
 
-            // ── Imagine de fundal ──
-            lblBackgroundImage = new Label { Location = new Point(12, 690), Size = new Size(130, 20), Text = "Imagine fundal:" };
-            btnAlegeBackground = new Button { Location = new Point(12, 712), Size = new Size(100, 23), Text = "Alege imagine" };
-            btnStergeBackground = new Button { Location = new Point(115, 712), Size = new Size(80, 23), Text = "Șterge" };
-            pbBackgroundPreview = new PictureBox { Location = new Point(12, 745), Size = new Size(80, 60), SizeMode = PictureBoxSizeMode.Zoom, BorderStyle = BorderStyle.FixedSingle };
-
-            btnAlegeBackground.Click += btnAlegeBackground_Click;
-            btnStergeBackground.Click += btnStergeBackground_Click;
-
-            this.Controls.Add(lblBackgroundImage);
-            this.Controls.Add(btnAlegeBackground);
-            this.Controls.Add(btnStergeBackground);
-            this.Controls.Add(pbBackgroundPreview);
-
             // Imagine fundal pentru bloc
             Button btnAlegeImgBloc = new Button { Location = new Point(10, 210), Size = new Size(130, 23), Text = "Imagine fundal bloc" };
             Button btnStergeImgBloc = new Button { Location = new Point(145, 210), Size = new Size(80, 23), Text = "Șterge" };
@@ -1677,6 +1630,9 @@ namespace proiect_poo
                 _blocCurent.BackgroundImage = null;
                 pbImgBloc.Image = null;
             };
+
+            pbImgBloc.Click += (s, ev) => DeschidePreviewImagine(pbImgBloc.Image);
+            pbIconDecizie.Click += (s, ev) => DeschidePreviewImagine(pbIconDecizie.Image);
 
             panelEditareBloc.Controls.Add(btnAlegeImgBloc);
             panelEditareBloc.Controls.Add(btnStergeImgBloc);
@@ -1822,7 +1778,7 @@ namespace proiect_poo
 
             // ── Form ──
             this.SuspendLayout();
-            this.ClientSize = new Size(1070, 820);
+            this.ClientSize = new Size(1070, 700);
             this.Text = "Story Editor";
 
             this.Controls.Add(btnCreazaNoua);
