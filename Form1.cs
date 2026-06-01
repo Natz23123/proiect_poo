@@ -17,20 +17,26 @@ namespace proiect_poo
         private string _calePoveste;
         private PictureBox _blockBackgroundPictureBox; // fundalul specific blocului
 
+        private Dictionary<string, Image> _imageCache = new Dictionary<string, Image>();
+
         public Form1()
         {
             InitializeComponent();
+
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            this.UpdateStyles();
+
             _blockBackgroundPictureBox = new PictureBox
             {
                 SizeMode = PictureBoxSizeMode.StretchImage,
                 Visible = false,
-                BackColor = Color.Transparent
+                BackColor = Color.Black
             };
             this.Controls.Add(_blockBackgroundPictureBox);
 
-            _blockBackgroundPictureBox.Controls.Add(panelHUD);
-            _blockBackgroundPictureBox.Controls.Add(panelButoane);
-            _blockBackgroundPictureBox.Controls.Add(lblTextHolder);
+            //_blockBackgroundPictureBox.Controls.Add(panelHUD);
+            //_blockBackgroundPictureBox.Controls.Add(panelButoane);
+            //_blockBackgroundPictureBox.Controls.Add(lblTextHolder);
 
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -76,6 +82,8 @@ namespace proiect_poo
             // Curăță folderul temporar la închidere
             this.FormClosed += (s, e) =>
             {
+                foreach (var img in _imageCache.Values) img?.Dispose();
+                _imageCache.Clear();
                 // Eliberează imaginea de fundal a ferestrei (dacă există)
                 if (this.BackgroundImage != null)
                 {
@@ -160,14 +168,6 @@ namespace proiect_poo
             var poveste = _gameState.PovesteIncarcata;
             string imagesDir = Path.Combine(baseDir, "imagini");
 
-            // imaginea de fundal a poveștii
-            if (!string.IsNullOrEmpty(poveste.BackgroundImage))
-            {
-                string fullPath = Path.Combine(imagesDir, poveste.BackgroundImage);
-                poveste.BackgroundImage = File.Exists(fullPath) ? fullPath : null;
-            }
-
-            // blocurile și deciziile
             if (poveste.Days != null)
             {
                 foreach (var zi in poveste.Days)
@@ -179,6 +179,8 @@ namespace proiect_poo
                         {
                             string fullPath = Path.Combine(imagesDir, bloc.BackgroundImage);
                             bloc.BackgroundImage = File.Exists(fullPath) ? fullPath : null;
+                            if (bloc.BackgroundImage != null)
+                                IncarcaImagine(bloc.BackgroundImage); // încarcă în cache
                         }
 
                         if (bloc.Decisions != null)
@@ -189,12 +191,22 @@ namespace proiect_poo
                                 {
                                     string fullPath = Path.Combine(imagesDir, dec.Icon);
                                     dec.Icon = File.Exists(fullPath) ? fullPath : null;
+                                    if (dec.Icon != null)
+                                        IncarcaImagine(dec.Icon); // încarcă în cache
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+
+        private Image IncarcaImagine(string cale)
+        {
+            if (string.IsNullOrEmpty(cale) || !File.Exists(cale)) return null;
+            if (!_imageCache.ContainsKey(cale))
+                _imageCache[cale] = Image.FromFile(cale);
+            return _imageCache[cale];
         }
 
         private void ActualizeazaInterfata()
@@ -213,40 +225,21 @@ namespace proiect_poo
 
 
             // Fundal specific blocului
-            if (_blockBackgroundPictureBox != null)
+            if (!string.IsNullOrEmpty(blocCurent.BackgroundImage) && File.Exists(blocCurent.BackgroundImage))
             {
-                if (!string.IsNullOrEmpty(blocCurent.BackgroundImage) && File.Exists(blocCurent.BackgroundImage))
-                {
-                    try
-                    {
-                        _blockBackgroundPictureBox.Image?.Dispose();
-                        _blockBackgroundPictureBox.Image = Image.FromFile(blocCurent.BackgroundImage);
-                        _blockBackgroundPictureBox.Visible = true;
-                        _blockBackgroundPictureBox.Location = new Point(0, 0);
-                        _blockBackgroundPictureBox.Size = this.ClientSize;
-                        // Ascunde fundalul general ca să nu acopere fundalul blocului
-                        this.BackgroundImage = null;
-                    }
-                    catch { _blockBackgroundPictureBox.Visible = false; }
-                }
-                else
-                {
-                    // Nu există fundal specific — arată fundalul general al poveștii
-                    _blockBackgroundPictureBox.Visible = false;
-
-                    if (_gameState.PovesteIncarcata != null && !string.IsNullOrEmpty(_gameState.PovesteIncarcata.BackgroundImage) &&
-                        File.Exists(_gameState.PovesteIncarcata.BackgroundImage))
-                    {
-                        try { this.BackgroundImage = Image.FromFile(_gameState.PovesteIncarcata.BackgroundImage); }
-                        catch { this.BackgroundImage = null; }
-                    }
-                    else
-                    {
-                        this.BackgroundImage = null;
-                    }
-                    this.BackgroundImageLayout = ImageLayout.Stretch;
-                }
+                _blockBackgroundPictureBox.Image = IncarcaImagine(blocCurent.BackgroundImage);
+                _blockBackgroundPictureBox.Visible = true;
+                _blockBackgroundPictureBox.Location = new Point(0, 0);
+                _blockBackgroundPictureBox.Size = this.ClientSize;
+                _blockBackgroundPictureBox.SendToBack();
             }
+            else
+            {
+                _blockBackgroundPictureBox.Visible = false;
+                _blockBackgroundPictureBox.Image = null;
+            }
+
+            this.Refresh();
 
             // Asigură-te că textul și panourile sunt deasupra
             lblTextHolder.BringToFront();
@@ -287,7 +280,23 @@ namespace proiect_poo
             createStatusHud();
             createButtons(blocCurent);
         }
-        protected override void OnPaintBackground(PaintEventArgs e) { }
+        protected override void OnPaintBackground(PaintEventArgs e) {
+            //MessageBox.Show($"bg poveste: '{_gameState?.PovesteIncarcata?.BackgroundImage}'\nblock bg: '{(_blockBackgroundPictureBox?.Visible == true ? "visible" : "hidden")}'");
+            if (_blockBackgroundPictureBox != null && _blockBackgroundPictureBox.Visible && _blockBackgroundPictureBox.Image != null)
+                e.Graphics.DrawImage(_blockBackgroundPictureBox.Image, 0, 0, this.ClientSize.Width, this.ClientSize.Height);
+            else if (_gameState?.PovesteIncarcata != null &&
+                     !string.IsNullOrEmpty(_gameState.PovesteIncarcata.BackgroundImage) &&
+                     File.Exists(_gameState.PovesteIncarcata.BackgroundImage))
+            {
+                var img = IncarcaImagine(_gameState.PovesteIncarcata.BackgroundImage);
+                if (img != null)
+                    e.Graphics.DrawImage(img, 0, 0, this.ClientSize.Width, this.ClientSize.Height);
+                else
+                    e.Graphics.Clear(Color.Black);
+            }
+            else
+                e.Graphics.Clear(Color.Black);
+        }
 
         private void AfiseazaEcranEnding(BlockJsonDefinition blocEnding)
         {
@@ -298,7 +307,12 @@ namespace proiect_poo
             _textAnimation.StartAnimation(blocEnding.Text);
 
             // Golește butoanele și pune doar "Joacă din nou" și "Ieși"
-            panelButoane.Controls.Clear();
+            while (panelButoane.Controls.Count > 0)
+            {
+                var c = panelButoane.Controls[0];
+                panelButoane.Controls.RemoveAt(0);
+                c.Dispose();
+            }
             _tooltip.RemoveAll();
 
             var btnReplay = BuildButton("▶  Joacă din nou", "Repornește jocul de la început.");
@@ -364,7 +378,12 @@ namespace proiect_poo
         // =====================================================================
         private void createButtons(BlockJsonDefinition blocCurent)
         {
-            panelButoane.Controls.Clear();
+            while (panelButoane.Controls.Count > 0)
+            {
+                var c = panelButoane.Controls[0];
+                panelButoane.Controls.RemoveAt(0);
+                c.Dispose();
+            }
             _tooltip.RemoveAll();
             _tooltip.InitialDelay = 300;
             _tooltip.AutoPopDelay = 5000;
@@ -381,7 +400,14 @@ namespace proiect_poo
                 Image icon = null;
                 if (areIcon)
                 {
-                    try { icon = new Bitmap(Image.FromFile(decizie.Icon), new Size(40, 40)); }
+                    try
+                    {
+                        var original = IncarcaImagine(decizie.Icon);
+                        if (original != null)
+                            icon = new Bitmap(original, new Size(40, 40));
+                        else
+                            areIcon = false;
+                    }
                     catch { areIcon = false; }
                 }
 
@@ -432,9 +458,21 @@ namespace proiect_poo
                     int decisionsReqR = blocCurent.DecisionsRequired;
                     string nextBlockR = blocCurent.NextBlock;
 
-                    var btnResearch = BuildButton(
-                        "Dă research la o idee →",
-                        "Deschide lista de idei disponibile pentru research.");
+                    Button btnResearch = new Button();
+                    btnResearch.Size = new Size(50, 50);
+                    btnResearch.BackColor = Color.Black;
+                    btnResearch.FlatStyle = FlatStyle.Flat;
+                    btnResearch.FlatAppearance.BorderSize = 1;
+                    btnResearch.FlatAppearance.BorderColor = Color.White;
+                    btnResearch.FlatAppearance.MouseOverBackColor = Color.White;
+                    btnResearch.Cursor = Cursors.Hand;
+                    btnResearch.Margin = new Padding(0, 0, 5, 5);
+                    btnResearch.Text = "R";
+                    btnResearch.ForeColor = Color.White;
+                    btnResearch.Font = new Font("Smallest Pixel-7", 14, FontStyle.Bold);
+                    btnResearch.MouseEnter += (s, e) => btnResearch.ForeColor = Color.Black;
+                    btnResearch.MouseLeave += (s, e) => btnResearch.ForeColor = Color.White;
+                    _tooltip.SetToolTip(btnResearch, "Dă research la o idee");
 
                     btnResearch.Click += (s, e) =>
                     {
@@ -444,16 +482,27 @@ namespace proiect_poo
                     panelButoane.Controls.Add(btnResearch);
                 }
 
-                // Buton agregat IMPLEMENT
                 bool areIdeiDeImplementat = _gameState.IdeaResearchLevels.Any(kv => kv.Value >= 1);
                 if (areIdeiDeImplementat)
                 {
                     int decisionsReqI = blocCurent.DecisionsRequired;
                     string nextBlockI = blocCurent.NextBlock;
 
-                    var btnImpl = BuildButton(
-                        "Implementează o idee →",
-                        "Deschide lista de idei gata de implementat.");
+                    Button btnImpl = new Button();
+                    btnImpl.Size = new Size(50, 50);
+                    btnImpl.BackColor = Color.Black;
+                    btnImpl.FlatStyle = FlatStyle.Flat;
+                    btnImpl.FlatAppearance.BorderSize = 1;
+                    btnImpl.FlatAppearance.BorderColor = Color.White;
+                    btnImpl.FlatAppearance.MouseOverBackColor = Color.White;
+                    btnImpl.Cursor = Cursors.Hand;
+                    btnImpl.Margin = new Padding(0, 0, 5, 5);
+                    btnImpl.Text = "I";
+                    btnImpl.ForeColor = Color.White;
+                    btnImpl.Font = new Font("Smallest Pixel-7", 14, FontStyle.Bold);
+                    btnImpl.MouseEnter += (s, e) => btnImpl.ForeColor = Color.Black;
+                    btnImpl.MouseLeave += (s, e) => btnImpl.ForeColor = Color.White;
+                    _tooltip.SetToolTip(btnImpl, "Implementează o idee");
 
                     btnImpl.Click += (s, e) =>
                     {
@@ -464,6 +513,7 @@ namespace proiect_poo
                 }
             }
         }
+        
 
         // =====================================================================
         // POPUP PICKER
