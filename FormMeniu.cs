@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
-using System.Media;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace proiect_poo
 {
@@ -15,8 +15,8 @@ namespace proiect_poo
         private Timer timerBlinkingArrow;
         private System.ComponentModel.IContainer components;
         private Button btnIesire;
-        private readonly SoundPlayer _hoverSoundPlayer;
-        private readonly SoundPlayer _clickSoundPlayer;
+        private string _hoverSoundPath;
+        private string _clickSoundPath;
 
         // ========================================================
         // LINIILE ADAUGATE: Declarăm butoanele noi ca să fie recunoscute în context
@@ -31,18 +31,8 @@ namespace proiect_poo
             ConfigureazaSubmeniuPoveste();
 
             string soundEffectsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Sound Effects");
-            string hoverSoundPath = Path.Combine(soundEffectsPath, "hover.wav");
-            string clickSoundPath = Path.Combine(soundEffectsPath, "click.wav");
-            if (File.Exists(hoverSoundPath))
-            {
-                _hoverSoundPlayer = new SoundPlayer(hoverSoundPath);
-                _hoverSoundPlayer.LoadAsync();
-            }
-            if (File.Exists(clickSoundPath))
-            {
-                _clickSoundPlayer = new SoundPlayer(clickSoundPath);
-                _clickSoundPlayer.LoadAsync();
-            }
+            _hoverSoundPath = Path.Combine(soundEffectsPath, "hover.wav");
+            _clickSoundPath = Path.Combine(soundEffectsPath, "click.wav");
         }
 
         private void ConfigureazaSubmeniuPoveste()
@@ -306,12 +296,34 @@ namespace proiect_poo
 
         private void PlayHoverSound()
         {
-            _hoverSoundPlayer?.Play();
+            PlaySoundImmediate(_hoverSoundPath);
         }
 
         private void PlayClickSound()
         {
-            _clickSoundPlayer?.Play();
+            PlaySoundImmediate(_clickSoundPath);
+        }
+
+        private static void PlaySoundImmediate(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                return;
+            }
+
+            PlaySound(path, IntPtr.Zero, PlaySoundFlags.SND_FILENAME | PlaySoundFlags.SND_ASYNC | PlaySoundFlags.SND_NODEFAULT | PlaySoundFlags.SND_PURGE);
+        }
+
+        [DllImport("winmm.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool PlaySound(string pszSound, IntPtr hmod, PlaySoundFlags fdwSound);
+
+        [Flags]
+        private enum PlaySoundFlags : int
+        {
+            SND_ASYNC = 0x0001,
+            SND_NODEFAULT = 0x0002,
+            SND_PURGE = 0x0040,
+            SND_FILENAME = 0x00020000
         }
     }
 }
