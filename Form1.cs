@@ -15,10 +15,23 @@ namespace proiect_poo
         private ToolTip _tooltip = new ToolTip();
         private string _tempExtractFolder;
         private string _calePoveste;
+        private PictureBox _blockBackgroundPictureBox; // fundalul specific blocului
 
         public Form1()
         {
             InitializeComponent();
+            _blockBackgroundPictureBox = new PictureBox
+            {
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                Visible = false,
+                BackColor = Color.Transparent
+            };
+            this.Controls.Add(_blockBackgroundPictureBox);
+
+            _blockBackgroundPictureBox.Controls.Add(panelHUD);
+            _blockBackgroundPictureBox.Controls.Add(panelButoane);
+            _blockBackgroundPictureBox.Controls.Add(lblTextHolder);
+
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             lblTextHolder.ForeColor = Color.White;
@@ -29,7 +42,20 @@ namespace proiect_poo
             _tooltip.Draw += CustomToolTip_Draw;
             _tooltip.Popup += CustomToolTip_Popup;
 
-            // Încarcă default_story.zip; dacă nu există, fallback pe json
+            // Asigură-te că textul și panourile sunt deasupra fundalurilor
+            lblTextHolder.BringToFront();
+            panelHUD.BringToFront();
+            panelButoane.BringToFront();
+
+            lblTextHolder.BackColor = Color.Transparent;
+            panelHUD.BackColor = Color.Transparent;
+            panelButoane.BackColor = Color.Transparent;
+
+            lblTextHolder.BringToFront();
+            panelHUD.BringToFront();
+            panelButoane.BringToFront();
+
+            // ACUM încarcă povestea
             if (File.Exists("default_story.zip"))
             {
                 IncarcaPovesteDinFisier("default_story.zip");
@@ -46,9 +72,37 @@ namespace proiect_poo
             // Curăță folderul temporar la închidere
             this.FormClosed += (s, e) =>
             {
+                // Eliberează imaginea de fundal a ferestrei (dacă există)
+                if (this.BackgroundImage != null)
+                {
+                    this.BackgroundImage.Dispose();
+                    this.BackgroundImage = null;
+                }
+
+                // Eliberează celelalte imagini din PictureBox-uri
+                ElibereazaImaginiDinControale(this.Controls);
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
                 if (!string.IsNullOrEmpty(_tempExtractFolder) && Directory.Exists(_tempExtractFolder))
                     Directory.Delete(_tempExtractFolder, true);
             };
+        }
+
+        private void ElibereazaImaginiDinControale(Control.ControlCollection controale)
+        {
+            foreach (Control c in controale)
+            {
+                if (c is PictureBox pb)
+                {
+                    pb.Image?.Dispose();
+                    pb.Image = null;
+                }
+                // Parcurge recursiv controalele copil (ex. panourile care conțin iconițe)
+                if (c.HasChildren)
+                    ElibereazaImaginiDinControale(c.Controls);
+            }
         }
 
         private void IncarcaPovesteDinFisier(string caleFisier)
@@ -97,31 +151,41 @@ namespace proiect_poo
         {
             string baseDir = _calePoveste;
             if (string.IsNullOrEmpty(baseDir)) return;
+            if (_gameState?.PovesteIncarcata == null) return;
 
-            // Imaginea de fundal a poveștii
-            if (!string.IsNullOrEmpty(_gameState.PovesteIncarcata.BackgroundImage))
+            var poveste = _gameState.PovesteIncarcata;
+            string imagesDir = Path.Combine(baseDir, "imagini");
+
+            // imaginea de fundal a poveștii
+            if (!string.IsNullOrEmpty(poveste.BackgroundImage))
             {
-                string fullPath = Path.Combine(baseDir, _gameState.PovesteIncarcata.BackgroundImage);
-                _gameState.PovesteIncarcata.BackgroundImage = File.Exists(fullPath) ? fullPath : null;
+                string fullPath = Path.Combine(imagesDir, poveste.BackgroundImage);
+                poveste.BackgroundImage = File.Exists(fullPath) ? fullPath : null;
             }
 
-            foreach (var zi in _gameState.PovesteIncarcata.Days)
+            // blocurile și deciziile
+            if (poveste.Days != null)
             {
-                foreach (var bloc in zi.Blocks)
+                foreach (var zi in poveste.Days)
                 {
-                    if (!string.IsNullOrEmpty(bloc.BackgroundImage))
+                    if (zi.Blocks == null) continue;
+                    foreach (var bloc in zi.Blocks)
                     {
-                        string fullPath = Path.Combine(baseDir, bloc.BackgroundImage);
-                        bloc.BackgroundImage = File.Exists(fullPath) ? fullPath : null;
-                    }
-                    if (bloc.Decisions != null)
-                    {
-                        foreach (var dec in bloc.Decisions)
+                        if (!string.IsNullOrEmpty(bloc.BackgroundImage))
                         {
-                            if (!string.IsNullOrEmpty(dec.Icon))
+                            string fullPath = Path.Combine(imagesDir, bloc.BackgroundImage);
+                            bloc.BackgroundImage = File.Exists(fullPath) ? fullPath : null;
+                        }
+
+                        if (bloc.Decisions != null)
+                        {
+                            foreach (var dec in bloc.Decisions)
                             {
-                                string fullPath = Path.Combine(baseDir, dec.Icon);
-                                dec.Icon = File.Exists(fullPath) ? fullPath : null;
+                                if (!string.IsNullOrEmpty(dec.Icon))
+                                {
+                                    string fullPath = Path.Combine(imagesDir, dec.Icon);
+                                    dec.Icon = File.Exists(fullPath) ? fullPath : null;
+                                }
                             }
                         }
                     }
@@ -143,6 +207,48 @@ namespace proiect_poo
                 _gameState.CurrentBlockId = blocCurent.Id;
             }
 
+
+            // Fundal specific blocului
+            if (_blockBackgroundPictureBox != null)
+            {
+                if (!string.IsNullOrEmpty(blocCurent.BackgroundImage) && File.Exists(blocCurent.BackgroundImage))
+                {
+                    try
+                    {
+                        _blockBackgroundPictureBox.Image?.Dispose();
+                        _blockBackgroundPictureBox.Image = Image.FromFile(blocCurent.BackgroundImage);
+                        _blockBackgroundPictureBox.Visible = true;
+                        _blockBackgroundPictureBox.Location = new Point(0, 0);
+                        _blockBackgroundPictureBox.Size = this.ClientSize;
+                        // Ascunde fundalul general ca să nu acopere fundalul blocului
+                        this.BackgroundImage = null;
+                    }
+                    catch { _blockBackgroundPictureBox.Visible = false; }
+                }
+                else
+                {
+                    // Nu există fundal specific — arată fundalul general al poveștii
+                    _blockBackgroundPictureBox.Visible = false;
+
+                    if (_gameState.PovesteIncarcata != null && !string.IsNullOrEmpty(_gameState.PovesteIncarcata.BackgroundImage) &&
+                        File.Exists(_gameState.PovesteIncarcata.BackgroundImage))
+                    {
+                        try { this.BackgroundImage = Image.FromFile(_gameState.PovesteIncarcata.BackgroundImage); }
+                        catch { this.BackgroundImage = null; }
+                    }
+                    else
+                    {
+                        this.BackgroundImage = null;
+                    }
+                    this.BackgroundImageLayout = ImageLayout.Stretch;
+                }
+            }
+
+            // Asigură-te că textul și panourile sunt deasupra
+            lblTextHolder.BringToFront();
+            panelHUD.BringToFront();
+            panelButoane.BringToFront();
+
             // ----- AUTOMAT PENTRU BLOCUL DE VERIFICARE A SFÂRȘITULUI -----
             if (blocCurent.Id == "block_endings_check")
             {
@@ -152,15 +258,14 @@ namespace proiect_poo
 
                 string idEndingAles;
                 if (deciziiValide.Count > 0)
-                    idEndingAles = deciziiValide.First().TargetBlock; // prima decizie validă
+                    idEndingAles = deciziiValide.First().TargetBlock;
                 else
-                    idEndingAles = blocCurent.NextBlock ?? "ending_default"; // fallback
+                    idEndingAles = blocCurent.NextBlock ?? "ending_default";
 
                 _gameState.CurrentBlockId = idEndingAles;
-                ActualizeazaInterfata(); // reapelează direct cu noul bloc (va fi un ending)
+                ActualizeazaInterfata();
                 return;
             }
-            // -------------------------------------------------------------
 
             string tipBloc = blocCurent.BlockType ?? "normal";
 
@@ -170,10 +275,9 @@ namespace proiect_poo
                 return;
             }
 
+            string title = _gameState.PovesteIncarcata?.Title ?? "Joc";
             var ziCurenta = _gameState.ZiuaCurenta();
-            this.Text = ziCurenta != null
-                ? $"{_gameState.PovesteIncarcata.Title} | {ziCurenta.Name}"
-                : _gameState.PovesteIncarcata.Title;
+            this.Text = ziCurenta != null ? $"{title} | {ziCurenta.Name}" : title;
 
             _textAnimation.StartAnimation(blocCurent.Text);
             createStatusHud();
@@ -268,17 +372,53 @@ namespace proiect_poo
                 if (decizie.Condition != null && !decizie.Condition.Evaluate(_gameState.ToateStatusurile))
                     continue;
 
-                var btn = BuildButton(decizie.Text, BuildNormalTooltip(decizie));
+                // Verifică iconița
+                bool areIcon = !string.IsNullOrEmpty(decizie.Icon) && File.Exists(decizie.Icon);
+                Image icon = null;
+                if (areIcon)
+                {
+                    try { icon = Image.FromFile(decizie.Icon); } catch { areIcon = false; }
+                }
+
+                // Container pentru buton + iconiță
+                FlowLayoutPanel panelDecizie = new FlowLayoutPanel
+                {
+                    AutoSize = true,
+                    FlowDirection = FlowDirection.LeftToRight,
+                    WrapContents = false,
+                    Margin = new Padding(0, 0, 0, 5)
+                };
+
+                Button btn = BuildButton(decizie.Text, BuildNormalTooltip(decizie));
+                if (areIcon)
+                {
+                    // Redu ușor lățimea minimă pentru a face loc iconiței
+                    btn.MinimumSize = new Size(280, 45);
+                    btn.Width = 280;
+                }
                 var decizieCapturata = decizie;
                 int decisionsRequired = blocCurent.DecisionsRequired;
 
                 btn.Click += (s, e) =>
                 {
-                    // MessageBox.Show("Buton apasat, merg la: " + decizieCapturata.TargetBlock);
                     _gameState.AplicaEfecteDecizie(decizieCapturata, decisionsRequired);
                     ActualizeazaInterfata();
                 };
-                panelButoane.Controls.Add(btn);
+                panelDecizie.Controls.Add(btn);
+
+                if (areIcon && icon != null)
+                {
+                    PictureBox iconBox = new PictureBox
+                    {
+                        Image = icon,
+                        SizeMode = PictureBoxSizeMode.Zoom,
+                        Size = new Size(40, 40),
+                        Margin = new Padding(5, 0, 0, 0)
+                    };
+                    panelDecizie.Controls.Add(iconBox);
+                }
+
+                panelButoane.Controls.Add(panelDecizie);
             }
 
             // Buton agregat RESEARCH
