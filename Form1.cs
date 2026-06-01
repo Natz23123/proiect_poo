@@ -447,7 +447,7 @@ namespace proiect_poo
                 }
 
                 Button btn = new Button();
-                btn.Size = new Size(50, 50);
+                btn.Size = new Size(200, 200);
                 btn.BackColor = Color.Black;
                 btn.FlatStyle = FlatStyle.Flat;
                 btn.FlatAppearance.BorderSize = 1;
@@ -814,6 +814,11 @@ namespace proiect_poo
                 TextRenderer.DrawText(e.Graphics, e.ToolTipText, font, textRect, Color.White,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
             }
+        }
+
+        private void panelButoane_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }
